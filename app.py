@@ -1,0 +1,541 @@
+import logging
+from datetime import date, datetime
+from functools import wraps
+from typing import Optional, cast
+
+import requests
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import (
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
+
+from config import REGIONS, Config
+from i18n import init_i18n
+from i18n import translate as _
+from models import Favorite, Skin, StoreOffer, User, WebhookConfig, db
+from riot_auth import AuthenticationError, RiotAuth
+from skin_cache import is_cache_stale, refresh_skin_cache, search_skins
+from store_api import detect_shard_by_token, get_user_store
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+login_manager = LoginManager()
+# 某些类型桩未声明这些动态属性，使用 setattr 可避免 IDE 误报
+setattr(login_manager, "login_view", "login")
+setattr(login_manager, "login_message", "请先登录")
+setattr(login_manager, "login_message_category", "warning")
+
+
+def _current_user() -> User:
+    return cast(User, current_user)
+
+
+def _current_user_id() -> int:
+    uid = _current_user().id
+    if uid is None:
+        raise RuntimeError("当前用户ID为空")
+    return int(uid)
+
+
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def decorated(*args, **kwargs):
+        if not _current_user().is_admin:
+            flash("需要管理员权限", "danger")
+            return redirect(url_for("dashboard"))
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def create_app() -> Flask:
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    db.init_app(app)
+    login_manager.init_app(app)
+    init_i18n(app)
+
+    @login_manager.user_loader
+    def load_user(user_id: str) -> Optional[User]:
+        return db.session.get(User, int(user_id))
+
+    with app.app_context():
+        db.create_all()
+
+        # 迁移: 为已有 skins 表添加 name_i18n 列
+        from sqlalchemy import inspect as sa_inspect
+        from sqlalchemy import text
+
+        inspector = sa_inspect(db.engine)
+        skin_cols = [c["name"] for c in inspector.get_columns("skins")]
+        if "name_i18n" not in skin_cols:
+            db.session.execute(text("ALTER TABLE skins ADD COLUMN name_i18n TEXT"))
+            db.session.commit()
+        if "cost_cn" not in skin_cols:
+            db.session.execute(text("ALTER TABLE skins ADD COLUMN cost_cn INTEGER"))
+            db.session.commit()
+        if "is_melee" not in skin_cols:
+            db.session.execute(
+                text("ALTER TABLE skins ADD COLUMN is_melee BOOLEAN DEFAULT 0")
+            )
+            db.session.commit()
+
+        if not User.query.filter_by(is_admin=True).first():
+            admin = User()
+            admin.login_name = "admin"
+            admin.display_name = "管理员"
+            admin.is_admin = True
+            admin.set_login_password("admin123")
+            db.session.add(admin)
+            db.session.commit()
+            logger.info("已创建默认管理员账号: admin / admin123")
+
+        if is_cache_stale():
+            try:
+                refresh_skin_cache()
+            except Exception as e:
+                logger.warning(f"启动时皮肤缓存刷新失败: {e}")
+
+    from scheduler import init_scheduler
+
+    init_scheduler(app)
+
+    # ============ 公开路由 ============
+
+    @app.route("/")
+    def index():
+        if current_user.is_authenticated:
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("login"))
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        if current_user.is_authenticated:
+            return redirect(url_for("dashboard"))
+        if request.method == "GET":
+            return render_template("login.html")
+
+        login_name = request.form.get("login_name", "").strip()
+        password = request.form.get("password", "").strip()
+        user = User.query.filter_by(login_name=login_name).first()
+
+        if not user or not user.check_login_password(password):
+            flash(_("flash_login_error"), "danger")
+            return render_template("login.html")
+
+        login_user(user, remember=True)
+        next_page = request.args.get("next")
+        return redirect(next_page or url_for("dashboard"))
+
+    @app.route("/register", methods=["GET", "POST"])
+    def register():
+        if current_user.is_authenticated:
+            return redirect(url_for("dashboard"))
+        if request.method == "GET":
+            return render_template("register.html")
+
+        login_name = request.form.get("login_name", "").strip()
+        password = request.form.get("password", "").strip()
+        password2 = request.form.get("password2", "").strip()
+        display_name = request.form.get("display_name", "").strip() or login_name
+
+        if not login_name or not password:
+            flash(_("flash_register_fill"), "danger")
+            return render_template("register.html")
+        if password != password2:
+            flash(_("flash_register_mismatch"), "danger")
+            return render_template("register.html")
+        if len(password) < 6:
+            flash(_("flash_register_short"), "danger")
+            return render_template("register.html")
+        if User.query.filter_by(login_name=login_name).first():
+            flash(_("flash_register_exists"), "danger")
+            return render_template("register.html")
+
+        user = User()
+        user.login_name = login_name
+        user.display_name = display_name
+        user.set_login_password(password)
+        db.session.add(user)
+        db.session.commit()
+        login_user(user, remember=True)
+        flash(_("flash_register_ok"), "success")
+        return redirect(url_for("bind_riot"))
+
+    @app.route("/logout")
+    @login_required
+    def logout():
+        logout_user()
+        flash(_("flash_logout"), "info")
+        return redirect(url_for("login"))
+
+    # ============ 用户路由 ============
+
+    @app.route("/dashboard")
+    @login_required
+    def dashboard():
+        user = _current_user()
+        user_id = _current_user_id()
+        today = date.today()
+        offers = []
+        fav_uuids = set()
+        if user.riot_bound:
+            offers_db = StoreOffer.query.filter_by(
+                user_id=user_id, offer_date=today
+            ).all()
+            fav_uuids = {
+                f.skin_uuid for f in Favorite.query.filter_by(user_id=user_id).all()
+            }
+            for o in offers_db:
+                skin = db.session.get(Skin, o.skin_uuid)
+                offers.append(
+                    {
+                        "uuid": o.skin_uuid,
+                        "skin": skin,
+                        "name": skin.name if skin else "未知皮肤",
+                        "icon_url": skin.icon_url if skin else None,
+                        "tier_name": skin.tier_name if skin else None,
+                        "cost": o.cost,
+                        "is_favorite": o.skin_uuid in fav_uuids,
+                    }
+                )
+        fav_count = Favorite.query.filter_by(user_id=user_id).count()
+        return render_template(
+            "dashboard.html", offers=offers, fav_count=fav_count, today=today
+        )
+
+    @app.route("/bind", methods=["GET"])
+    @login_required
+    def bind_riot():
+        return render_template("bind.html", regions=REGIONS)
+
+    @app.route("/bind/url", methods=["POST"])
+    @login_required
+    def bind_url():
+        user = _current_user()
+        access_url = request.form.get("access_url", "").strip()
+        region = request.form.get("region", "ap")
+
+        if not access_url:
+            flash(_("flash_bind_no_url"), "danger")
+            return redirect(url_for("bind_riot"))
+
+        try:
+            access_token, puuid_from_url = RiotAuth.parse_from_url(access_url)
+            # 尝试验证一下 token 是否有效
+            auth = RiotAuth("", "", region)
+            auth.authorize_with_token(access_token)
+
+            # 优先使用 userinfo 返回的 sub（更可靠）；URL 里的 id_token 仅作兜底
+            puuid = auth.puuid or puuid_from_url
+            if not puuid:
+                raise AuthenticationError("无法解析 PUUID，请重新获取 URL 后再试")
+
+            # 注意：此方法无法获取用户名，只能通过 PUUID 绑定
+            # 我们尽量从 userinfo 获取用户名
+            try:
+                headers = {"Authorization": f"Bearer {access_token}"}
+                resp = requests.get(
+                    "https://auth.riotgames.com/userinfo", headers=headers, timeout=10
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    # 尝试多种可能的字段获取游戏名
+                    game_name = data.get("acct", {}).get("game_name")
+                    tag_line = data.get("acct", {}).get("tag_line")
+
+                    if not game_name:
+                        # 另一种常见的响应格式
+                        game_name = data.get("game_name")
+                        tag_line = data.get("tag_line")
+
+                    if game_name:
+                        user.riot_username = (
+                            f"{game_name}#{tag_line}" if tag_line else game_name
+                        )
+                    else:
+                        user.riot_username = f"User_{puuid[:8]}"
+                else:
+                    user.riot_username = f"User_{puuid[:8]}"
+            except Exception as e:
+                logger.warning(f"获取用户信息失败: {e}")
+                user.riot_username = f"User_{puuid[:8]}"
+
+            user.puuid = puuid
+            # 尝试自动识别 shard（na/eu/ap）；失败则保留用户选择
+            detected_shard = None
+            try:
+                detected_shard = detect_shard_by_token(access_token)
+            except Exception as e:
+                logger.warning(f"URL 绑定时自动识别区服失败: {e}")
+            user.region = (
+                detected_shard if detected_shard in ("na", "eu", "ap") else region
+            )
+            user.set_url_access_token(access_token)
+            db.session.commit()
+
+        except Exception as e:
+            flash(_("flash_bind_failed", error=e), "danger")
+            return redirect(url_for("bind_riot"))
+
+        # 绑定已提交，商店刷新失败不应影响绑定结果
+        try:
+            store_data = get_user_store(
+                user,
+                access_token=access_token,
+                entitlements_token=auth.entitlements_token,
+                puuid=puuid,
+            )
+            if store_data.get("error"):
+                flash(
+                    _("flash_bind_ok_store_fail", error=store_data["error"]), "warning"
+                )
+            else:
+                flash(_("flash_bind_ok"), "success")
+        except Exception as e:
+            logger.warning(f"URL 绑定后首次商店刷新异常: {e}")
+            flash(_("flash_bind_ok_no_store"), "warning")
+        return redirect(url_for("dashboard"))
+
+    @app.route("/unbind", methods=["POST"])
+    @login_required
+    def unbind_riot():
+        user = _current_user()
+        user.riot_username = None
+        user.encrypted_riot_password = None
+        user.region = None
+        user.puuid = None
+        db.session.commit()
+        flash(_("flash_unbind_ok"), "info")
+        return redirect(url_for("dashboard"))
+
+    @app.route("/my/store/refresh", methods=["POST"])
+    @login_required
+    def my_store_refresh():
+        user = _current_user()
+        if not user.riot_bound:
+            flash(_("flash_not_bound"), "warning")
+            return redirect(url_for("bind_riot"))
+        store_data = get_user_store(user)
+        if store_data.get("error"):
+            flash(_("flash_store_error", error=store_data["error"]), "danger")
+        else:
+            flash(_("flash_store_ok"), "success")
+        return redirect(url_for("dashboard"))
+
+    # --- 皮肤浏览 ---
+    @app.route("/skins")
+    @login_required
+    def skins_list():
+        user_id = _current_user_id()
+        query = request.args.get("q", "")
+        page = request.args.get("page", 1, type=int)
+        pagination = search_skins(query, page=page, per_page=24)
+        fav_uuids = {
+            f.skin_uuid for f in Favorite.query.filter_by(user_id=user_id).all()
+        }
+
+        return render_template(
+            "skins.html",
+            skins=pagination.items,
+            pagination=pagination,
+            query=query,
+            fav_uuids=fav_uuids,
+        )
+
+    # --- 收藏管理 ---
+    @app.route("/my/favorites")
+    @login_required
+    def my_favorites():
+        favs = Favorite.query.filter_by(user_id=_current_user_id()).all()
+        return render_template("favorites.html", favorites=favs)
+
+    @app.route("/my/favorites/toggle", methods=["POST"])
+    @login_required
+    def favorite_toggle():
+        user_id = _current_user_id()
+        payload = request.get_json(silent=True)
+        skin_uuid = request.form.get("skin_uuid")
+        if not skin_uuid and isinstance(payload, dict):
+            value = payload.get("skin_uuid")
+            skin_uuid = value if isinstance(value, str) else None
+        if not skin_uuid:
+            return jsonify({"error": "缺少皮肤UUID"}), 400
+
+        existing = Favorite.query.filter_by(
+            user_id=user_id, skin_uuid=skin_uuid
+        ).first()
+        if existing:
+            db.session.delete(existing)
+            db.session.commit()
+            return jsonify({"status": "removed"})
+        else:
+            fav = Favorite()
+            fav.user_id = user_id
+            fav.skin_uuid = skin_uuid
+            db.session.add(fav)
+            db.session.commit()
+            return jsonify({"status": "added"})
+
+    # ============ 管理员路由 ============
+
+    @app.route("/admin")
+    @admin_required
+    def admin_index():
+        user_count = User.query.count()
+        bound_count = User.query.filter(User.riot_username.isnot(None)).count()
+        webhook_count = WebhookConfig.query.filter_by(is_active=True).count()
+        skin_count = Skin.query.count()
+        today_offers = StoreOffer.query.filter_by(offer_date=date.today()).count()
+        from scheduler import get_scheduler
+
+        sched = get_scheduler()
+        next_run = None
+        if sched:
+            job = sched.get_job("daily_store_check")
+            if job and job.next_run_time:
+                next_run = job.next_run_time.strftime("%Y-%m-%d %H:%M:%S")
+        return render_template(
+            "admin/index.html",
+            user_count=user_count,
+            bound_count=bound_count,
+            webhook_count=webhook_count,
+            skin_count=skin_count,
+            today_offers=today_offers,
+            next_run=next_run,
+        )
+
+    @app.route("/admin/users")
+    @admin_required
+    def admin_users():
+        users = User.query.order_by(User.created_at.desc()).all()
+        return render_template("admin/users.html", users=users)
+
+    @app.route("/admin/users/<int:user_id>/delete", methods=["POST"])
+    @admin_required
+    def admin_user_delete(user_id):
+        admin_id = _current_user_id()
+        user = db.session.get(User, user_id)
+        if user:
+            if user.id == admin_id:
+                flash("不能删除自己", "danger")
+                return redirect(url_for("admin_users"))
+            name = user.display_name or user.login_name
+            db.session.delete(user)
+            db.session.commit()
+            flash(f"用户 {name} 已删除", "info")
+        return redirect(url_for("admin_users"))
+
+    @app.route("/admin/users/<int:user_id>/toggle-admin", methods=["POST"])
+    @admin_required
+    def admin_toggle_admin(user_id):
+        admin_id = _current_user_id()
+        user = db.session.get(User, user_id)
+        if user and user.id != admin_id:
+            user.is_admin = not user.is_admin
+            db.session.commit()
+            status = "管理员" if user.is_admin else "普通用户"
+            flash(f"{user.display_name or user.login_name} 已设为{status}", "info")
+        return redirect(url_for("admin_users"))
+
+    @app.route("/admin/settings")
+    @admin_required
+    def admin_settings():
+        webhooks = WebhookConfig.query.order_by(WebhookConfig.created_at.desc()).all()
+        from scheduler import get_scheduler
+
+        sched = get_scheduler()
+        next_run = None
+        if sched:
+            job = sched.get_job("daily_store_check")
+            if job and job.next_run_time:
+                next_run = job.next_run_time.strftime("%Y-%m-%d %H:%M:%S")
+        return render_template(
+            "admin/settings.html", webhooks=webhooks, next_run=next_run
+        )
+
+    @app.route("/admin/webhook/add", methods=["POST"])
+    @admin_required
+    def admin_webhook_add():
+        name = request.form.get("name", "").strip()
+        url = request.form.get("url", "").strip()
+        if not name or not url:
+            flash("请填写名称和 URL", "danger")
+            return redirect(url_for("admin_settings"))
+        wh = WebhookConfig()
+        wh.name = name
+        wh.url = url
+        db.session.add(wh)
+        db.session.commit()
+        flash(f"Webhook '{name}' 已添加", "success")
+        return redirect(url_for("admin_settings"))
+
+    @app.route("/admin/webhook/<int:wh_id>/delete", methods=["POST"])
+    @admin_required
+    def admin_webhook_delete(wh_id):
+        wh = db.session.get(WebhookConfig, wh_id)
+        if wh:
+            db.session.delete(wh)
+            db.session.commit()
+            flash("Webhook 已删除", "info")
+        return redirect(url_for("admin_settings"))
+
+    @app.route("/admin/webhook/<int:wh_id>/toggle", methods=["POST"])
+    @admin_required
+    def admin_webhook_toggle(wh_id):
+        wh = db.session.get(WebhookConfig, wh_id)
+        if wh:
+            wh.is_active = not wh.is_active
+            db.session.commit()
+            status = "启用" if wh.is_active else "禁用"
+            flash(f"Webhook 已{status}", "info")
+        return redirect(url_for("admin_settings"))
+
+    @app.route("/admin/webhook/<int:wh_id>/test", methods=["POST"])
+    @admin_required
+    def admin_webhook_test(wh_id):
+        wh = db.session.get(WebhookConfig, wh_id)
+        if not wh:
+            flash("Webhook 不存在", "danger")
+            return redirect(url_for("admin_settings"))
+        from webhook import send_webhook
+
+        payload = {
+            "event": "test",
+            "message": "这是一条测试消息",
+            "timestamp": datetime.now().isoformat(),
+        }
+        ok = send_webhook(wh.url, payload)
+        if ok:
+            flash("测试消息发送成功!", "success")
+        else:
+            flash("测试消息发送失败，请检查 URL", "danger")
+        return redirect(url_for("admin_settings"))
+
+    @app.route("/admin/check-now", methods=["POST"])
+    @admin_required
+    def admin_check_now():
+        from webhook import process_all_users
+
+        result = process_all_users()
+        flash(f"手动检查完成: {result['success']} 成功, {result['error']} 失败", "info")
+        return redirect(url_for("admin_settings"))
+
+    @app.route("/admin/refresh-skins", methods=["POST"])
+    @admin_required
+    def admin_refresh_skins():
+        count = refresh_skin_cache()
+        flash(f"皮肤缓存已刷新，共 {count} 个皮肤", "success")
+        return redirect(url_for("admin_settings"))
+
+    return app

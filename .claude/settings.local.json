@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:valorantools.gg)",
+      "Bash(curl -sL -o /dev/null -w \"%{url_effective}\\\\n%{http_code}\" \"https://valorantools.gg/\")",
+      "Bash(curl -sL \"https://valorantools.gg/\")",
+      "Bash(grep -ioE '\\(LoginPopProvider|RiotAccount|Access.?URL|Official.?Interface|signIn|loginGoogle|auth\\\\.riotgames|redirect_uri|client_id|response_type|scope|authorize\\)[^\\\\\\\\]*')",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('riot_auth.py', doraise=True\\); py_compile.compile\\('app.py', doraise=True\\); py_compile.compile\\('store_api.py', doraise=True\\); py_compile.compile\\('models.py', doraise=True\\); print\\('All files compile OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('i18n.py', doraise=True\\); py_compile.compile\\('app.py', doraise=True\\); print\\('Python OK'\\)\")",
+      "Bash(python -c \"import json, os; [json.load\\(open\\(os.path.join\\('translations', f\\), encoding='utf-8'\\)\\) for f in os.listdir\\('translations'\\) if f.endswith\\('.json'\\)]; print\\(f'All {len\\(os.listdir\\(\\\\\"translations\\\\\"\\)\\)} JSON files valid'\\)\")",
+      "Bash(python -c ':*)",
+      "Bash(python -c \"import py_compile; [py_compile.compile\\(f, doraise=True\\) for f in ['i18n.py','app.py','skin_cache.py','models.py']]; print\\('All OK'\\)\")"
+    ]
+  }
+}

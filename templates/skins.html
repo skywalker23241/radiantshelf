@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ _('skins_title') }}{% endblock %}
+
+{% block content %}
+<div class="mb-5">
+    <h1 class="display-6 fw-bold tracking-tight mb-4">{{ _('skins_heading') }}</h1>
+
+    <div class="card bg-muted/10 border-muted p-4 shadow-none">
+        <form method="GET" action="{{ url_for('skins_list') }}" class="row g-3">
+            <div class="col-md-9 position-relative">
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                <input type="text" class="form-control ps-5 py-2.5" name="q" value="{{ query }}"
+                    placeholder="{{ _('skins_search_placeholder') }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit"
+                    class="btn btn-primary w-100 py-2.5 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-sliders"></i> {{ _('skins_search_btn') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if skins %}
+<div class="row g-4">
+    {% for skin in skins %}
+    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <div class="card skin-card h-100 skin-browse-card border-muted bg-transparent hover-border-primary shadow-none"
+            id="skin-{{ skin.uuid }}">
+            <div class="skin-img-wrapper-sm position-relative overflow-hidden">
+                {% if skin.icon_url %}
+                <img src="{{ skin.icon_url }}" class="skin-img" alt="{{ skin.name }}" loading="lazy">
+                {% else %}
+                <i class="bi bi-image text-muted"></i>
+                {% endif %}
+            </div>
+            <div class="card-body p-3">
+                <div class="mb-3">
+                    <small class="fw-semibold text-foreground d-block text-truncate" title="{{ skin_name(skin) }}">{{
+                        skin_name(skin) }}</small>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        {% if skin.tier_name %}
+                        <span class="badge tier-badge tier-{{ skin.tier_name.replace(' ', '-').lower() }}">{{
+                            tier_display(skin.tier_name) }}</span>
+                        {% endif %}
+                        {% set display_cost = localized_price(skin) %}
+                        {% if display_cost %}
+                        <div class="d-flex align-items-center gap-1 small fw-bold text-primary">
+                            <i class="bi bi-currency-exchange" style="font-size: 0.7rem;"></i>
+                            <span>{{ display_cost }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button
+                    class="btn btn-sm w-100 fav-btn transition-all py-1.5 {% if skin.uuid in fav_uuids %}btn-warning text-dark{% else %}btn-outline-secondary text-muted border-muted{% endif %}"
+                    onclick="toggleFav('{{ skin.uuid }}')" id="fav-{{ skin.uuid }}"
+                    data-fav-text="{{ _('skins_favorited') }}" data-unfav-text="{{ _('skins_favorite') }}">
+                    <i class="bi {% if skin.uuid in fav_uuids %}bi-star-fill{% else %}bi-star{% endif %} me-1"></i>
+                    <span class="small fw-bold">{% if skin.uuid in fav_uuids %}{{ _('skins_favorited') }}{% else %}{{
+                        _('skins_favorite') }}{% endif %}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-5 pt-4">
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link shadow-none" href="{{ url_for('skins_list', q=query, page=pagination.prev_num) }}">
+                <i class="bi bi-chevron-left small"></i>
+            </a>
+        </li>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+            <a class="page-link shadow-none" href="{{ url_for('skins_list', q=query, page=p) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link shadow-none" href="{{ url_for('skins_list', q=query, page=pagination.next_num) }}">
+                <i class="bi bi-chevron-right small"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card border-dashed border-2 bg-transparent py-5 text-center shadow-none mt-4">
+    <div class="card-body">
+        <i class="bi bi-search display-2 text-muted mb-3 opacity-25"></i>
+        <h5 class="text-muted">{{ _('skins_no_match', query=query) if query else _('skins_cache_empty') }}</h5>
+        {% if query %}
+        <a href="{{ url_for('skins_list') }}" class="btn btn-link text-primary text-decoration-none mt-2">Clear
+            search</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleFav(skinUuid) {
+        const btn = document.getElementById('fav-' + skinUuid);
+        const icon = btn.querySelector('i');
+        const span = btn.querySelector('span');
+        const favText = btn.dataset.favText;
+        const unfavText = btn.dataset.unfavText;
+
+        // Optimistic UI update
+        const isAdding = btn.classList.contains('btn-outline-secondary');
+
+        fetch('/my/favorites/toggle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({skin_uuid: skinUuid})
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'added') {
+                    btn.className = 'btn btn-sm w-100 fav-btn transition-all py-1.5 btn-warning text-dark';
+                    icon.className = 'bi bi-star-fill me-1';
+                    span.textContent = favText;
+                } else {
+                    btn.className = 'btn btn-sm w-100 fav-btn transition-all py-1.5 btn-outline-secondary text-muted border-muted';
+                    icon.className = 'bi bi-star me-1';
+                    span.textContent = unfavText;
+                }
+            })
+            .catch(() => {
+                // Revert on error
+                alert('Action failed, please try again.');
+            });
+    }
+</script>
+{% endblock %}

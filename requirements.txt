@@ -1,0 +1,7 @@
+Flask==3.1.*
+Flask-SQLAlchemy==3.1.*
+Flask-Login==0.6.*
+SQLAlchemy==2.0.*
+requests==2.32.*
+cryptography==44.*
+APScheduler==3.10.*

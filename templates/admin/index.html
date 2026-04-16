@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}管理面板 - Valorant 每日商店{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-shield-lock"></i> 管理面板</h2>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center border-primary">
+            <div class="card-body">
+                <h5 class="card-title text-primary"><i class="bi bi-people-fill"></i></h5>
+                <h3>{{ user_count }}</h3>
+                <p class="card-text text-muted">注册用户</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <h5 class="card-title text-success"><i class="bi bi-link-45deg"></i></h5>
+                <h3>{{ bound_count }}</h3>
+                <p class="card-text text-muted">已绑定 Riot</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-info">
+            <div class="card-body">
+                <h5 class="card-title text-info"><i class="bi bi-bell-fill"></i></h5>
+                <h3>{{ webhook_count }}</h3>
+                <p class="card-text text-muted">活跃 Webhook</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <h5 class="card-title text-warning"><i class="bi bi-shop"></i></h5>
+                <h3>{{ today_offers }}</h3>
+                <p class="card-text text-muted">今日商品</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-clock"></i> 定时任务</h5>
+        {% if next_run %}
+        <p>下次自动检查: <strong>{{ next_run }}</strong></p>
+        {% else %}
+        <p class="text-muted">定时任务未运行</p>
+        {% endif %}
+        <p>皮肤缓存: <strong>{{ skin_count }}</strong> 个皮肤</p>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <a href="{{ url_for('admin_users') }}" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-people"></i> 用户管理
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{{ url_for('admin_settings') }}" class="btn btn-secondary btn-lg w-100">
+            <i class="bi bi-gear"></i> 系统设置
+        </a>
+    </div>
+    <div class="col-md-4">
+        <form action="{{ url_for('admin_check_now') }}" method="POST">
+            <button type="submit" class="btn btn-warning btn-lg w-100"
+                    onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> 检查中...'; this.form.submit();">
+                <i class="bi bi-play-fill"></i> 立即检查所有用户
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

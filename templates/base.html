@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ _('site_name') }}{% endblock %}</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons & Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 32px; height: 32px;">
+                    <i class="bi bi-crosshair text-white fs-5"></i>
+                </div>
+                <span>{{ _('site_name') }}</span>
+            </a>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link px-3 d-flex align-items-center gap-2" href="{{ url_for('dashboard') }}">
+                            <i class="bi bi-house"></i> {{ _('nav_my_store') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 d-flex align-items-center gap-2" href="{{ url_for('skins_list') }}">
+                            <i class="bi bi-palette"></i> {{ _('nav_skins') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 d-flex align-items-center gap-2" href="{{ url_for('my_favorites') }}">
+                            <i class="bi bi-star"></i> {{ _('nav_favorites') }}
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-3 dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="bi bi-shield-lock"></i> {{ _('nav_admin') }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark border-muted shadow-lg">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin_index') }}">{{
+                                    _('nav_admin_panel') }}</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin_users') }}">{{
+                                    _('nav_admin_users') }}</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin_settings') }}">{{
+                                    _('nav_admin_settings') }}</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto gap-2">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-3 dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="bi bi-currency-exchange text-muted"></i>
+                            <span>{{ 'CN' if current_price_region == 'cn' else 'Global' }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-muted shadow-lg">
+                            <li><a class="dropdown-item py-2 {% if current_price_region == 'cn' %}active{% endif %}"
+                                    href="?price_region=cn">China (点券)</a></li>
+                            <li><a class="dropdown-item py-2 {% if current_price_region == 'global' %}active{% endif %}"
+                                    href="?price_region=global">Global (VP)</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-3 dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="bi bi-translate text-muted"></i> {{ lang_names[current_lang] }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-muted shadow-lg">
+                            {% for lang in supported_langs %}
+                            <li>
+                                <a class="dropdown-item py-2 {% if lang == current_lang %}active{% endif %}"
+                                    href="?lang={{ lang }}">{{ lang_names[lang] }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-3 dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle text-muted"></i> {{ current_user.display_name or
+                            current_user.login_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-muted shadow-lg"
+                            style="min-width: 200px;">
+                            <li>
+                                <div class="dropdown-header text-muted small uppercase fw-bold pb-1">{{ _('nav_account')
+                                    }}</div>
+                            </li>
+                            <li><a class="dropdown-item py-2 d-flex align-items-center gap-2"
+                                    href="{{ url_for('bind_riot') }}">
+                                    <i class="bi bi-link-45deg fs-5 text-muted"></i> {{ _('nav_bind_riot') }}
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider border-muted">
+                            </li>
+                            <li><a class="dropdown-item py-2 d-flex align-items-center gap-2 text-danger"
+                                    href="{{ url_for('logout') }}">
+                                    <i class="bi bi-box-arrow-right fs-5"></i> {{ _('nav_logout') }}
+                                </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-3 dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="bi bi-translate text-muted"></i> {{ lang_names[current_lang] }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-muted shadow-lg">
+                            {% for lang in supported_langs %}
+                            <li>
+                                <a class="dropdown-item py-2 {% if lang == current_lang %}active{% endif %}"
+                                    href="?lang={{ lang }}">{{ lang_names[lang] }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-8">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-3"
+                    role="alert">
+                    {% if category == 'success' %}<i class="bi bi-check-circle-fill"></i>
+                    {% elif category == 'danger' %}<i class="bi bi-exclamation-octagon-fill"></i>
+                    {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+                    <div>{{ message }}</div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="py-5 border-top border-muted">
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 text-muted">
+                <div class="small">{{ _('site_footer') }}</div>
+                <div class="d-flex gap-4">
+                    <a href="https://github.com/maboroshii/val-daily-store" target="_blank"
+                        class="text-muted text-decoration-none hover-white transition-colors">
+                        <i class="bi bi-github fs-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

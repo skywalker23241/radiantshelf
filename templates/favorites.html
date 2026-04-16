@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ _('fav_title') }}{% endblock %}
+
+{% block content %}
+<div class="row align-items-end mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold tracking-tight mb-2">{{ _('fav_heading') }}</h1>
+        <p class="text-muted mb-0">Manage your tracked Valorant skins and get notified when they appear.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <a href="{{ url_for('skins_list') }}" class="btn btn-primary px-4 py-2 d-inline-flex align-items-center gap-2">
+            <i class="bi bi-plus-lg"></i> {{ _('fav_add') }}
+        </a>
+    </div>
+</div>
+
+{% if favorites %}
+<div class="row g-4">
+    {% for fav in favorites %}
+    <div class="col-6 col-md-4 col-lg-3">
+        <div
+            class="card skin-card h-100 border-warning border-opacity-25 hover-border-warning shadow-none bg-transparent">
+            <div class="skin-img-wrapper position-relative">
+                {% if fav.skin and fav.skin.icon_url %}
+                <img src="{{ fav.skin.icon_url }}" class="skin-img" alt="{{ fav.skin.name }}" loading="lazy">
+                {% else %}
+                <i class="bi bi-image text-muted display-4"></i>
+                {% endif %}
+            </div>
+            <div class="card-body d-flex flex-column gap-3 p-3">
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold text-foreground mb-1">{{ skin_name(fav.skin) if fav.skin else
+                        _('fav_unknown_skin') }}</h6>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        {% if fav.skin and fav.skin.tier_name %}
+                        <span class="badge tier-badge tier-{{ fav.skin.tier_name.replace(' ', '-').lower() }}">{{
+                            tier_display(fav.skin.tier_name) }}</span>
+                        {% endif %}
+                        {% set display_cost = localized_price(fav.skin) %}
+                        {% if display_cost %}
+                        <div class="d-flex align-items-center gap-1 small fw-bold text-primary">
+                            <i class="bi bi-currency-exchange" style="font-size: 0.7rem;"></i>
+                            <span>{{ display_cost }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <button
+                    class="btn btn-sm btn-outline-danger w-100 mt-auto py-1.5 border-muted d-flex align-items-center justify-content-center gap-2 transition-all"
+                    onclick="removeFav('{{ fav.skin_uuid }}', this)" data-confirm="{{ _('fav_confirm_remove') }}">
+                    <i class="bi bi-trash small"></i> <span class="small fw-bold">{{ _('fav_remove') }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card border-dashed border-2 bg-transparent py-5 text-center shadow-none mt-4">
+    <div class="card-body">
+        <div class="mx-auto bg-muted rounded-circle d-flex align-items-center justify-content-center mb-4 opacity-50"
+            style="width: 80px; height: 80px;">
+            <i class="bi bi-star display-4 text-muted"></i>
+        </div>
+        <h5 class="text-muted mb-4">{{ _('fav_empty') }}</h5>
+        <a href="{{ url_for('skins_list') }}" class="btn btn-primary px-5">
+            <i class="bi bi-palette me-2"></i> {{ _('fav_browse') }}
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function removeFav(skinUuid, btn) {
+        if (!confirm(btn.dataset.confirm)) return;
+
+        // Add loading state
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>...';
+
+        fetch('/my/favorites/toggle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({skin_uuid: skinUuid})
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'removed') {
+                    const card = btn.closest('.col-6, .col-md-4, .col-lg-3');
+                    card.classList.add('fade');
+                    setTimeout(() => {
+                        card.remove();
+                        if (document.querySelectorAll('.skin-card').length === 0) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-trash small"></i> <span class="small fw-bold">{{ _("fav_remove") }}</span>';
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash small"></i> <span class="small fw-bold">{{ _("fav_remove") }}</span>';
+                alert('Action failed, please try again.');
+            });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}{{ _('bind_title') }}{% endblock %}
+
+{% block content %}
+<div class="mb-5">
+    <h1 class="display-6 fw-bold tracking-tight mb-2"><i class="bi bi-link-45deg text-primary"></i> {{ _('bind_heading')
+        }}</h1>
+    <p class="text-muted">{{ _('bind_privacy_note') }}</p>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Current Status -->
+    {% if current_user.riot_bound %}
+    <div class="col-12">
+        <div class="card border-success border-opacity-25 bg-muted/5 shadow-none overflow-hidden"
+            style="border-left: 4px solid #22c55e !important;">
+            <div
+                class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 p-4">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                        style="width: 52px; height: 52px;">
+                        <i class="bi bi-shield-check text-success fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h5 class="fw-bold mb-0 text-success small uppercase letter-spacing-widest">{{
+                                _('bind_status_bound') }}</h5>
+                            <span
+                                class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1"
+                                style="font-size: 0.65rem;">ACTIVE</span>
+                        </div>
+                        <div class="row g-3 align-items-center text-foreground fw-medium">
+                            <div class="col-auto d-flex align-items-center gap-2">
+                                <i class="bi bi-person text-muted"></i>
+                                <span>{{ current_user.riot_username }}</span>
+                            </div>
+                            <div class="col-auto d-flex align-items-center gap-2 border-start border-muted ps-3">
+                                <i class="bi bi-globe text-muted"></i>
+                                <span>{{ current_user.region | upper }}</span>
+                            </div>
+                            <div
+                                class="col-auto border-start border-muted ps-3 font-monospace small text-muted opacity-75">
+                                PUUID: {{ current_user.puuid[:12] }}...
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <form action="{{ url_for('unbind_riot') }}" method="POST" data-confirm="{{ _('bind_confirm_unbind') }}"
+                    onsubmit="return confirm(this.dataset.confirm)">
+                    <button type="submit"
+                        class="btn btn-outline-danger px-4 rounded-pill d-flex align-items-center gap-2 shadow-sm transition-all hover-white">
+                        <i class="bi bi-link-45deg fs-5"></i> {{ _('bind_unbind') }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Steps Grid -->
+    <div class="col-md-4">
+        <div class="card h-100 border-muted bg-transparent shadow-none">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span
+                        class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                        style="width: 32px; height: 32px;">1</span>
+                    <h5 class="fw-bold mb-0">{{ _('bind_step1_title') }}</h5>
+                </div>
+                <p class="text-muted small mb-4">{{ _('bind_step1_desc') }}</p>
+                <div class="d-grid mb-3">
+                    <a href="https://login.riotgames.com/end-session-redirect?redirect_uri=https%3A%2F%2Fauth.riotgames.com%2Flogout"
+                        target="_blank" rel="noopener" class="btn btn-outline-primary rounded-pill">
+                        <i class="bi bi-box-arrow-right me-2"></i> {{ _('bind_step1_btn') }}
+                    </a>
+                </div>
+                <button class="btn btn-link btn-sm text-muted text-decoration-none p-0 w-100 text-start"
+                    data-bs-toggle="collapse" data-bs-target="#step1Detail">
+                    <i class="bi bi-info-circle me-1"></i> {{ _('bind_detail_guide') }}
+                </button>
+                <div class="collapse mt-3" id="step1Detail">
+                    <div class="bg-muted bg-opacity-10 rounded p-3 small text-muted border border-muted">
+                        <ul class="mb-0 ps-3">
+                            <li>{{ _('bind_step1_guide_1') }}</li>
+                            <li>{{ _('bind_step1_guide_2') }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-muted bg-transparent shadow-none">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span
+                        class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                        style="width: 32px; height: 32px;">2</span>
+                    <h5 class="fw-bold mb-0">{{ _('bind_step2_title') }}</h5>
+                </div>
+                <p class="text-muted small mb-4">{{ _('bind_step2_desc') }}</p>
+                <div class="d-grid mb-3">
+                    <a href="https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid"
+                        target="_blank" rel="noopener" class="btn btn-outline-primary rounded-pill">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> {{ _('bind_step2_btn') }}
+                    </a>
+                </div>
+                <button class="btn btn-link btn-sm text-muted text-decoration-none p-0 w-100 text-start"
+                    data-bs-toggle="collapse" data-bs-target="#step2Detail">
+                    <i class="bi bi-info-circle me-1"></i> {{ _('bind_detail_guide') }}
+                </button>
+                <div class="collapse mt-3" id="step2Detail">
+                    <div class="bg-muted bg-opacity-10 rounded p-3 small text-muted border border-muted">
+                        <ul class="mb-0 ps-3">
+                            <li>{{ _('bind_step2_guide_1') }}</li>
+                            <li>{{ _('bind_step2_guide_2') }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-muted bg-transparent shadow-none">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span
+                        class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                        style="width: 32px; height: 32px;">3</span>
+                    <h5 class="fw-bold mb-0">{{ _('bind_step3_title') }}</h5>
+                </div>
+                <p class="text-muted small mb-4">{{ _('bind_step3_desc') }}</p>
+                <button class="btn btn-link btn-sm text-muted text-decoration-none p-0 w-100 text-start mb-2"
+                    data-bs-toggle="collapse" data-bs-target="#step3Detail">
+                    <i class="bi bi-info-circle me-1"></i> {{ _('bind_detail_guide') }}
+                </button>
+                <div class="collapse" id="step3Detail">
+                    <div class="bg-muted bg-opacity-10 rounded p-3 small text-muted border border-muted">
+                        <p class="mb-2">{{ _('bind_step3_guide_1') }}</p>
+                        <code
+                            class="d-block bg-dark p-2 rounded mb-2 overflow-hidden text-truncate">https://playvalorant.com/opt_in#access_token=eyJ...</code>
+                        <p class="mb-0">{{ _('bind_step3_guide_2') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Binding Form -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-muted bg-muted/5 shadow-sm rounded-xl overflow-hidden">
+            <div class="card-header bg-transparent border-muted p-4">
+                <h5 class="fw-bold mb-0"><i class="bi bi-link-45deg text-primary"></i> {{ _('bind_paste_url') }}</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('bind_url') }}">
+                    <div class="mb-4">
+                        <textarea class="form-control bg-background border-muted p-3 font-monospace small"
+                            name="access_url" rows="3" placeholder="https://playvalorant.com/opt_in#access_token=..."
+                            required></textarea>
+                    </div>
+                    <div class="row g-4 align-items-end">
+                        <div class="col-md-7">
+                            <label for="region_url"
+                                class="form-label small fw-bold uppercase letter-spacing-widest text-muted">{{
+                                _('bind_region_label') }}</label>
+                            <select class="form-select bg-background border-muted" id="region_url" name="region">
+                                {% for code, name in regions %}
+                                <option value="{{ code }}" {% if current_user.region==code or (not current_user.region
+                                    and code=='ap' ) %}selected{% endif %}>
+                                    {{ name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">{{ _('bind_region_help') }}</div>
+                        </div>
+                        <div class="col-md-5">
+                            <button type="submit"
+                                class="btn btn-primary w-100 py-2.5 fw-bold rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-check-circle"></i> {{ _('bind_submit') }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-transparent border-muted p-4 text-center">
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-clock-history me-1 text-warning"></i> {{ _('bind_token_note') }}
+                </p>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{{ url_for('dashboard') }}"
+                class="btn btn-link text-muted text-decoration-none d-inline-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left"></i> {{ _('bind_back_dashboard') }}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

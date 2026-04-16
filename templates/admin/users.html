@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}用户管理 - Valorant 每日商店{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-people"></i> 用户管理</h2>
+
+{% if users %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>用户名</th>
+                <th>昵称</th>
+                <th>角色</th>
+                <th>Riot 绑定</th>
+                <th>区服</th>
+                <th>注册时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+            <tr>
+                <td><code>{{ user.login_name }}</code></td>
+                <td>{{ user.display_name or '-' }}</td>
+                <td>
+                    {% if user.is_admin %}
+                    <span class="badge bg-danger">管理员</span>
+                    {% else %}
+                    <span class="badge bg-secondary">用户</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.riot_bound %}
+                    <span class="badge bg-success">{{ user.riot_username }}</span>
+                    {% else %}
+                    <span class="text-muted">未绑定</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.region | upper if user.region else '-' }}</td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        {% if user.id != current_user.id %}
+                        <form action="{{ url_for('admin_toggle_admin', user_id=user.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-outline-{% if user.is_admin %}warning{% else %}info{% endif %}"
+                                    title="{% if user.is_admin %}取消管理员{% else %}设为管理员{% endif %}">
+                                <i class="bi bi-shield{% if user.is_admin %}-fill{% endif %}"></i>
+                            </button>
+                        </form>
+                        <form action="{{ url_for('admin_user_delete', user_id=user.id) }}" method="POST" class="d-inline"
+                              onsubmit="return confirm('确定要删除用户 {{ user.login_name }} 吗？')">
+                            <button type="submit" class="btn btn-outline-danger" title="删除">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted small">当前用户</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">暂无用户</p>
+{% endif %}
+{% endblock %}
