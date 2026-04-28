@@ -12,6 +12,32 @@
 - 管理后台：用户管理、Webhook 管理、手动检查、皮肤缓存刷新
 - 多语言界面：中文、英文、日文、韩文、葡萄牙文、西班牙文、土耳其文、俄文
 
+## 界面截图
+
+### 首页
+
+![首页](screenshots/homepage.png)
+
+### 登录页
+
+![登录页](screenshots/login-page.png)
+
+### Riot 账号绑定页
+
+![Riot 账号绑定页](screenshots/bind-page.png)
+
+### 我的商店页
+
+![我的商店页](screenshots/skin-page.png)
+
+### 收藏页
+
+![收藏页](screenshots/fav-page.png)
+
+### Webhook 管理页
+
+![Webhook 管理页](screenshots/webhook-page.png)
+
 ## 技术栈
 
 - Python 3.10+
