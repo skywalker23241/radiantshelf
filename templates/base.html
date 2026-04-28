@@ -22,20 +22,27 @@
                 {{ _('site_name') }}
             </a>
             <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse"
-                data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if current_user.is_authenticated %}
                 <ul class="navbar-nav ms-4 gap-1">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}>{{ _('nav_my_store') }}</a>
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
+                            href="{{ url_for('dashboard') }}" {% if request.endpoint=='dashboard' %}aria-current="page"
+                            {% endif %}>{{ _('nav_my_store') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'skins_list' %}active{% endif %}" href="{{ url_for('skins_list') }}" {% if request.endpoint == 'skins_list' %}aria-current="page"{% endif %}>{{ _('nav_skins') }}</a>
+                        <a class="nav-link {% if request.endpoint == 'skins_list' %}active{% endif %}"
+                            href="{{ url_for('skins_list') }}" {% if request.endpoint=='skins_list'
+                            %}aria-current="page" {% endif %}>{{ _('nav_skins') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}" {% if request.endpoint == 'my_favorites' %}aria-current="page"{% endif %}>{{ _('nav_favorites') }}</a>
+                        <a class="nav-link {% if request.endpoint == 'my_favorites' %}active{% endif %}"
+                            href="{{ url_for('my_favorites') }}" {% if request.endpoint=='my_favorites'
+                            %}aria-current="page" {% endif %}>{{ _('nav_favorites') }}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="https://val.qq.com/act/a20230727rename/" target="_blank">{{
@@ -43,7 +50,8 @@
                     </li>
                     {% if current_user.is_admin %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('admin_') %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown">{{
+                        <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('admin_') %}active{% endif %}"
+                            href="#" role="button" data-bs-toggle="dropdown">{{
                             _('nav_admin') }}</a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('admin_index') }}">{{ _('nav_admin_panel')
@@ -127,8 +135,8 @@
     <footer class="app-footer">
         <div class="container d-flex justify-content-between align-items-center">
             <small>{{ _('site_footer') }}</small>
-            <a href="https://github.com/maboroshii/val-daily-store" target="_blank"
-                rel="noopener" aria-label="GitHub repository">
+            <a href="https://github.com/skywalker23241/valorant-daily-shop-webhook-tool" target="_blank" rel="noopener"
+                aria-label="GitHub repository">
                 <i class="bi bi-github"></i>
             </a>
         </div>
