@@ -2,12 +2,25 @@
 {% block title %}系统设置 - Valorant 每日商店{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-gear"></i> 系统设置</h2>
+<div class="page-header">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2">
+        <div>
+            <h1>系统设置</h1>
+            <p>配置每日检查任务、皮肤缓存刷新和 Webhook 通知。</p>
+        </div>
+        <a href="{{ url_for('admin_index') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>返回面板
+        </a>
+    </div>
+</div>
 
-<div class="row g-4">
-    <div class="col-md-6">
+<div class="settings-grid">
+    <div>
         <div class="card">
-            <div class="card-header"><i class="bi bi-clock"></i> 定时任务</div>
+            <div class="card-header">
+                <div class="card-title"><i class="bi bi-clock me-1"></i>定时任务</div>
+                <p class="card-description">手动触发检查或刷新本地皮肤缓存。</p>
+            </div>
             <div class="card-body">
                 {% if next_run %}
                 <p>下次自动检查: <strong>{{ next_run }}</strong></p>
@@ -31,9 +44,12 @@
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div>
         <div class="card">
-            <div class="card-header"><i class="bi bi-bell"></i> 添加 Webhook</div>
+            <div class="card-header">
+                <div class="card-title"><i class="bi bi-bell me-1"></i>添加 Webhook</div>
+                <p class="card-description">用于推送每日商店检查结果。</p>
+            </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('admin_webhook_add') }}">
                     <div class="mb-2">
@@ -52,10 +68,13 @@
 </div>
 
 <div class="card mt-4">
-    <div class="card-header"><i class="bi bi-list"></i> Webhook 列表</div>
+    <div class="card-header">
+        <div class="card-title"><i class="bi bi-list me-1"></i>Webhook 列表</div>
+        <p class="card-description">启用、测试或删除已配置的通知端点。</p>
+    </div>
     <div class="card-body">
         {% if webhooks %}
-        <div class="table-responsive">
+        <div class="table-responsive table-shell">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>

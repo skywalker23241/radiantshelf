@@ -109,6 +109,9 @@ def _ordered_shards(primary: str, detected: Optional[str] = None) -> List[str]:
     return ordered
 
 
+VP_CURRENCY_UUID = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741"
+
+
 def parse_daily_offers(storefront_data: Dict[str, Any]) -> List[str]:
     panel = storefront_data.get("SkinsPanelLayout")
     if not isinstance(panel, dict):
@@ -118,6 +121,34 @@ def parse_daily_offers(storefront_data: Dict[str, Any]) -> List[str]:
         return []
     # 只保留字符串 UUID，避免类型检查器/运行时异常
     return [x for x in offers if isinstance(x, str)]
+
+
+def parse_daily_offer_prices(storefront_data: Dict[str, Any]) -> Dict[str, int]:
+    """从 SingleItemStoreOffers 中提取每个皮肤的实际 VP 价格。
+
+    返回 {skin_level_uuid: vp_price} 映射。
+    """
+    panel = storefront_data.get("SkinsPanelLayout")
+    if not isinstance(panel, dict):
+        return {}
+    store_offers = panel.get("SingleItemStoreOffers")
+    if not isinstance(store_offers, list):
+        return {}
+    prices: Dict[str, int] = {}
+    for offer in store_offers:
+        if not isinstance(offer, dict):
+            continue
+        offer_id = offer.get("OfferID")
+        cost_map = offer.get("Cost")
+        if not offer_id or not isinstance(cost_map, dict):
+            continue
+        # VP 是主要货币；如果找不到 VP UUID 则取 Cost 中的第一个值
+        vp_cost = cost_map.get(VP_CURRENCY_UUID)
+        if vp_cost is None and cost_map:
+            vp_cost = next(iter(cost_map.values()))
+        if isinstance(vp_cost, (int, float)):
+            prices[offer_id] = int(vp_cost)
+    return prices
 
 
 def parse_offers_remaining_seconds(storefront_data: Dict[str, Any]) -> int:
@@ -231,6 +262,7 @@ def get_user_store(
         }
 
     skin_uuids = parse_daily_offers(storefront)
+    offer_prices = parse_daily_offer_prices(storefront)
     remaining = parse_offers_remaining_seconds(storefront)
 
     offers: List[Dict[str, Any]] = []
@@ -243,7 +275,20 @@ def get_user_store(
 
     for skin_uuid in skin_uuids:
         skin = get_skin(skin_uuid)
-        cost_value: Optional[int] = skin.cost if skin else None
+
+        # 优先使用商店接口返回的实际价格
+        actual_price = offer_prices.get(skin_uuid)
+        if actual_price is not None:
+            cost_value: Optional[int] = actual_price
+            # 将实际价格同步回皮肤缓存，以修正基于等级的估算
+            if skin and skin.cost != actual_price:
+                skin.cost = actual_price
+                logger.info(
+                    f"皮肤 {skin.name} 价格已从商店数据更新: {actual_price} VP"
+                )
+        else:
+            cost_value = skin.cost if skin else None
+
         # 使用逐字段赋值，避免类型检查器对 SQLAlchemy 构造参数的误报
         offer = StoreOffer()
         offer.user_id = user_id

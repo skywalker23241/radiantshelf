@@ -9,7 +9,13 @@
       "Bash(python -c \"import py_compile; py_compile.compile\\('i18n.py', doraise=True\\); py_compile.compile\\('app.py', doraise=True\\); print\\('Python OK'\\)\")",
       "Bash(python -c \"import json, os; [json.load\\(open\\(os.path.join\\('translations', f\\), encoding='utf-8'\\)\\) for f in os.listdir\\('translations'\\) if f.endswith\\('.json'\\)]; print\\(f'All {len\\(os.listdir\\(\\\\\"translations\\\\\"\\)\\)} JSON files valid'\\)\")",
       "Bash(python -c ':*)",
-      "Bash(python -c \"import py_compile; [py_compile.compile\\(f, doraise=True\\) for f in ['i18n.py','app.py','skin_cache.py','models.py']]; print\\('All OK'\\)\")"
+      "Bash(python -c \"import py_compile; [py_compile.compile\\(f, doraise=True\\) for f in ['i18n.py','app.py','skin_cache.py','models.py']]; print\\('All OK'\\)\")",
+      "WebFetch(domain:valorant-api.com)",
+      "Bash(curl -s \"https://valorant-api.com/v1/contenttiers\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s \"https://valorant-api.com/v1/weapons/skinlevels/e6150fd5-4ae7-f45c-aa15-e5b9aedd4068\")",
+      "Bash(pip list *)"
     ]
   }
 }

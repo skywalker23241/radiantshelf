@@ -3,7 +3,6 @@ import os
 from typing import Any, Dict, Optional
 
 from flask import Flask, request, session
-from markupsafe import Markup
 
 SUPPORTED_LANGS = ["zh", "en", "ja", "ko", "pt", "es", "tr", "ru"]
 DEFAULT_LANG = "zh"
@@ -103,21 +102,6 @@ def init_i18n(app: Flask):
             lang = request.args["lang"]
             if lang in SUPPORTED_LANGS:
                 session["lang"] = lang
-        if "price_region" in request.args:
-            region = request.args["price_region"]
-            if region in ["cn", "global"]:
-                session["price_region"] = region
-
-    def get_price_region():
-        return session.get("price_region", "cn")
-
-    def localized_price(skin):
-        if not skin:
-            return None
-        region = get_price_region()
-        if region == "cn":
-            return skin.cost_cn
-        return skin.cost
 
     @app.context_processor
     def inject_i18n():
@@ -125,9 +109,7 @@ def init_i18n(app: Flask):
             "_": translate,
             "skin_name": localized_skin_name,
             "tier_display": localized_tier_name,
-            "localized_price": localized_price,
             "current_lang": get_locale(),
-            "current_price_region": get_price_region(),
             "supported_langs": SUPPORTED_LANGS,
             "lang_names": LANG_NAMES,
         }

@@ -2,68 +2,63 @@
 {% block title %}{{ _('register_title') }}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center mb-5">
-    <div class="col-md-5 col-lg-4">
-        <div class="text-center mb-5 pt-4">
-            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
-                style="width: 64px; height: 64px;">
-                <i class="bi bi-person-plus text-primary fs-2"></i>
-            </div>
-            <h2 class="fw-bold tracking-tight mb-2">{{ _('register_heading') }}</h2>
-            <p class="text-muted small">{{ _('register_subtitle') }}</p>
+<div class="auth-shell">
+    <section class="auth-copy">
+        <div class="eyebrow mb-3">Account Setup</div>
+        <h1>{{ _('register_heading') }}</h1>
+        <p>{{ _('register_subtitle') }}</p>
+        <div class="auth-visual" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </section>
+
+    <section>
+        <div class="text-center mb-4">
+            <span class="brand-mark d-inline-flex mb-3" style="width: 42px; height: 42px; font-size: 1rem;">
+                <i class="bi bi-person-plus"></i>
+            </span>
+            <h1 class="h4 fw-bold mb-1">{{ _('register_heading') }}</h1>
+            <p class="text-muted mb-0">{{ _('register_subtitle') }}</p>
         </div>
 
-        <div class="card shadow-lg border-muted">
-            <div class="card-body p-4">
+        <div class="card auth-card">
+            <div class="card-header" style="padding-bottom: 0;">
+                <div class="card-title" style="font-size: 1rem;">{{ _('register_heading') }}</div>
+                <p class="card-description">{{ _('register_subtitle') }}</p>
+            </div>
+            <div style="padding: 1.5rem;">
                 <form method="POST" action="{{ url_for('register') }}">
                     <div class="mb-3">
-                        <label for="login_name"
-                            class="form-label small fw-semibold uppercase letter-spacing-widest text-muted">
-                            {{ _('register_username') }} <span class="text-primary">*</span>
-                        </label>
-                        <input type="text" class="form-control py-2" id="login_name" name="login_name" required
-                            autofocus placeholder="{{ _('register_username_placeholder') }}">
+                        <label for="login_name" class="form-label" style="font-size: 0.875rem;">{{ _('register_username') }}</label>
+                        <input type="text" class="form-control" id="login_name" name="login_name" required autofocus
+                            placeholder="{{ _('register_username_placeholder') }}">
                     </div>
                     <div class="mb-3">
-                        <label for="display_name"
-                            class="form-label small fw-semibold uppercase letter-spacing-widest text-muted">
-                            {{ _('register_nickname') }}
-                        </label>
-                        <input type="text" class="form-control py-2" id="display_name" name="display_name"
+                        <label for="display_name" class="form-label" style="font-size: 0.875rem;">{{ _('register_nickname') }}</label>
+                        <input type="text" class="form-control" id="display_name" name="display_name"
                             placeholder="{{ _('register_nickname_placeholder') }}">
                     </div>
                     <div class="mb-3">
-                        <label for="password"
-                            class="form-label small fw-semibold uppercase letter-spacing-widest text-muted">
-                            {{ _('register_password') }} <span class="text-primary">*</span>
-                        </label>
-                        <input type="password" class="form-control py-2" id="password" name="password" required
-                            minlength="6" placeholder="{{ _('register_password_placeholder') }}">
+                        <label for="password" class="form-label" style="font-size: 0.875rem;">{{ _('register_password') }}</label>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="6"
+                            placeholder="{{ _('register_password_placeholder') }}">
                     </div>
                     <div class="mb-4">
-                        <label for="password2"
-                            class="form-label small fw-semibold uppercase letter-spacing-widest text-muted">
-                            {{ _('register_confirm_password') }} <span class="text-primary">*</span>
-                        </label>
-                        <input type="password" class="form-control py-2" id="password2" name="password2" required
-                            minlength="6" placeholder="••••••••">
+                        <label for="password2" class="form-label" style="font-size: 0.875rem;">{{ _('register_confirm_password') }}</label>
+                        <input type="password" class="form-control" id="password2" name="password2" required minlength="6"
+                            placeholder="••••••">
                     </div>
-                    <button type="submit"
-                        class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-person-plus"></i> {{ _('register_submit') }}
-                    </button>
+                    <button type="submit" class="btn btn-primary w-100">{{ _('register_submit') }}</button>
                 </form>
             </div>
         </div>
 
-        <div class="text-center mt-4 mb-5">
-            <p class="text-muted small">
-                {{ _('register_has_account') }}
-                <a href="{{ url_for('login') }}" class="text-primary text-decoration-none fw-semibold">
-                    {{ _('register_login_link') }}
-                </a>
-            </p>
-        </div>
-    </div>
+        <p class="text-center mt-3" style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+            {{ _('register_has_account') }}
+            <a href="{{ url_for('login') }}">{{ _('register_login_link') }}</a>
+        </p>
+    </section>
 </div>
 {% endblock %}

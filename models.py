@@ -1,9 +1,10 @@
 import time as _time
 from datetime import date, datetime
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import Mapped, mapped_column
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import get_fernet
@@ -88,19 +89,33 @@ class User(UserMixin, db.Model):
 class Skin(db.Model):
     __tablename__ = "skins"
 
-    uuid = db.Column(db.String(36), primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    name_i18n = db.Column(
-        db.Text, nullable=True
-    )  # JSON: {"en": "...", "ja": "...", ...}
-    icon_url = db.Column(db.String(500), nullable=True)
-    tier_name = db.Column(db.String(50), nullable=True)
-    tier_icon = db.Column(db.String(500), nullable=True)
-    cost = db.Column(db.Integer, nullable=True)
-    cost_cn = db.Column(db.Integer, nullable=True)
-    weapon_name = db.Column(db.String(100), nullable=True)
-    is_melee = db.Column(db.Boolean, default=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    uuid: Mapped[str] = mapped_column(db.String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(db.String(200))
+    name_i18n: Mapped[str | None] = mapped_column(db.Text, default=None)
+    icon_url: Mapped[str | None] = mapped_column(db.String(500), default=None)
+    tier_name: Mapped[str | None] = mapped_column(db.String(50), default=None)
+    tier_icon: Mapped[str | None] = mapped_column(db.String(500), default=None)
+    cost: Mapped[int | None] = mapped_column(db.Integer, default=None)
+    weapon_name: Mapped[str | None] = mapped_column(db.String(100), default=None)
+    is_melee: Mapped[bool] = mapped_column(db.Boolean, default=False)
+    updated_at: Mapped[datetime | None] = mapped_column(db.DateTime, default=None)
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *,
+            uuid: str,
+            name: str,
+            name_i18n: str | None = None,
+            icon_url: str | None = None,
+            tier_name: str | None = None,
+            tier_icon: str | None = None,
+            cost: int | None = None,
+            weapon_name: str | None = None,
+            is_melee: bool = False,
+            updated_at: datetime | None = None,
+        ) -> None: ...
 
 
 class Favorite(db.Model):

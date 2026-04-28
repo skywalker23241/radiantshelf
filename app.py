@@ -81,9 +81,6 @@ def create_app() -> Flask:
         if "name_i18n" not in skin_cols:
             db.session.execute(text("ALTER TABLE skins ADD COLUMN name_i18n TEXT"))
             db.session.commit()
-        if "cost_cn" not in skin_cols:
-            db.session.execute(text("ALTER TABLE skins ADD COLUMN cost_cn INTEGER"))
-            db.session.commit()
         if "is_melee" not in skin_cols:
             db.session.execute(
                 text("ALTER TABLE skins ADD COLUMN is_melee BOOLEAN DEFAULT 0")

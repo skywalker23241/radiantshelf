@@ -2,87 +2,106 @@
 {% block title %}{{ _('dash_title') }}{% endblock %}
 
 {% block content %}
-<div class="row align-items-end mb-5">
-    <div class="col-md-8">
-        <h1 class="display-6 fw-bold tracking-tight mb-2">{{ _('dash_heading') }}</h1>
-        <p class="text-muted mb-0">
-            {% if current_user.riot_bound %}
-            <span class="d-inline-flex align-items-center gap-2">
-                <i class="bi bi-person-check text-success"></i>
-                <span class="fw-medium text-foreground">{{ current_user.riot_username }}</span>
-                {% if current_user.region %}
-                <span class="px-2 py-0.5 rounded-pill bg-primary bg-opacity-10 text-primary small uppercase fw-bold"
-                    style="font-size: 0.65rem; letter-spacing: 0.05em;">
-                    {{ current_user.region | upper }}
+<div class="page-header">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2">
+        <div>
+            <h1>{{ _('dash_heading') }}</h1>
+            <p>
+                {% if current_user.riot_bound %}
+                <span class="status-chip">
+                    <span class="status-dot"></span>
+                    {{ current_user.riot_username }}
+                    {% if current_user.region %}
+                    <span class="badge tier-badge region-badge">{{
+                        current_user.region | upper }}</span>
+                    {% endif %}
+                </span>
+                {% else %}
+                <span class="status-chip">
+                    <span class="status-dot warning"></span>
+                    {{ _('dash_not_bound') }}
                 </span>
                 {% endif %}
-            </span>
-            {% else %}
-            <span class="text-warning d-inline-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle"></i> {{ _('dash_not_bound') }}
-            </span>
-            {% endif %}
-        </p>
-    </div>
-    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-        <div
-            class="d-inline-flex align-items-center gap-3 bg-muted/30 px-3 py-2 rounded-lg border border-muted shadow-sm">
-            <i class="bi bi-calendar3 text-primary"></i>
-            <span class="fw-semibold small">{{ today.strftime('%Y-%m-%d') }}</span>
+            </p>
         </div>
+        <span class="text-muted small">{{ today.strftime('%Y-%m-%d') }}</span>
+    </div>
+</div>
+
+<div class="dashboard-summary">
+    <div class="summary-item">
+        <div class="summary-label">{{ _('nav_bind_riot') }}</div>
+        <div class="summary-value">{% if current_user.riot_bound %}{{ current_user.region | upper }}{% else %}-{% endif %}</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-label">{{ _('nav_favorites') }}</div>
+        <div class="summary-value">{{ fav_count }}</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-label">{{ _('dash_heading') }}</div>
+        <div class="summary-value">{{ offers | length }}</div>
     </div>
 </div>
 
 {% if not current_user.riot_bound %}
-<div class="card border-dashed bg-muted/10 py-5 text-center shadow-none border-2 rounded-xl">
-    <div class="card-body py-5">
-        <div class="mx-auto bg-muted rounded-circle d-flex align-items-center justify-content-center mb-4 shadow-sm"
-            style="width: 80px; height: 80px;">
-            <i class="bi bi-link-45deg display-4 text-muted"></i>
-        </div>
-        <h4 class="fw-bold mb-2">{{ _('dash_not_bound') }}</h4>
-        <p class="text-muted mx-auto mb-4" style="max-width: 400px;">{{ _('dash_not_bound_desc') }}</p>
-        <a href="{{ url_for('bind_riot') }}" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm">
-            <i class="bi bi-plus-lg me-2"></i> {{ _('dash_bind_btn') }}
-        </a>
-    </div>
+<!-- Not bound empty state -->
+<div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-link-45deg"></i></div>
+    <h3>{{ _('dash_not_bound') }}</h3>
+    <p>{{ _('dash_not_bound_desc') }}</p>
+    <a href="{{ url_for('bind_riot') }}" class="btn btn-primary">
+        {{ _('dash_bind_btn') }}
+    </a>
 </div>
+
 {% elif offers %}
-<div class="row g-4 mb-5">
+<!-- Daily offers grid -->
+<div class="section-toolbar">
+    <h2 class="section-kicker">{{ _('dash_heading') }}</h2>
+    <button class="btn btn-primary btn-sm" onclick="revealAll()">
+        <i class="bi bi-stars me-1"></i>{{ _('dash_reveal_all') }}
+    </button>
+</div>
+
+<div class="row g-3 mb-4">
     {% for offer in offers %}
-    <div class="col-md-6 col-lg-3">
-        <div
-            class="card skin-card h-100 {% if offer.is_favorite %}border-warning border-opacity-50{% endif %} shadow-sm">
-            <div class="skin-img-wrapper position-relative">
-                {% if offer.is_favorite %}
-                <div class="position-absolute top-0 end-0 m-3 z-3">
-                    <span class="badge bg-warning text-dark shadow-sm d-flex align-items-center gap-1">
-                        <i class="bi bi-star-fill"></i> {{ _('dash_favorited') }}
-                    </span>
+    <div class="col-6 col-md-3">
+        <div class="store-item-container store-card-frame tier-card-{{ offer.tier_name.replace(' ', '-').lower() if offer.tier_name else 'none' }}">
+            <div class="skin-flip-card" onclick="this.classList.toggle('is-revealed')">
+                <!-- Front: Mystery Card -->
+                <div class="card-front">
+                    <i class="bi bi-fire"></i>
                 </div>
-                {% endif %}
-                {% if offer.icon_url %}
-                <img src="{{ offer.icon_url }}" class="skin-img" alt="{{ offer.name }}">
-                {% else %}
-                <i class="bi bi-image text-muted display-4 opacity-25"></i>
-                {% endif %}
-            </div>
-            <div class="card-body d-flex flex-column gap-3">
-                <div class="flex-grow-1">
-                    <h6 class="fw-bold text-foreground mb-1">{{ skin_name(offer.skin) if offer.skin else
-                        _('fav_unknown_skin') }}</h6>
-                    <div class="d-flex align-items-center justify-content-between mt-1">
-                        {% if offer.tier_name %}
-                        <span class="badge tier-badge tier-{{ offer.tier_name.replace(' ', '-').lower() }}">{{
-                            tier_display(offer.tier_name) }}</span>
+                <!-- Back: Skin Info -->
+                <div class="card-back skin-card">
+                    <div class="skin-img-wrap position-relative">
+                        {% if offer.is_favorite %}
+                        <span class="badge position-absolute top-0 end-0 m-2"
+                            style="background: hsl(46 95% 65% / 0.15); color: hsl(46 95% 70%); border: 1px solid hsl(46 95% 65% / 0.2); z-index: 2;">
+                            <i class="bi bi-star-fill me-1" style="font-size: 0.6rem;"></i>
+                        </span>
                         {% endif %}
-                        {% set display_cost = offer.cost or (localized_price(offer.skin) if offer.skin else none) %}
-                        {% if display_cost %}
-                        <div class="d-flex align-items-center gap-1 small fw-bold text-primary">
-                            <i class="bi bi-currency-exchange" style="font-size: 0.7rem;"></i>
-                            <span>{{ display_cost }}</span>
+                        {% if offer.icon_url %}
+                        <img src="{{ offer.icon_url }}" class="skin-img" alt="{{ offer.name }}">
+                        {% else %}
+                        <i class="bi bi-image"
+                            style="font-size: 2rem; color: hsl(var(--muted-foreground)); opacity: 0.25;"></i>
+                        {% endif %}
+                    </div>
+                    <div
+                        style="padding: 0.75rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div class="fw-bold text-truncate" style="font-size: 0.8125rem; line-height: 1.2;">
+                            {{ skin_name(offer.skin) if offer.skin else _('fav_unknown_skin') }}
                         </div>
-                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            {% if offer.tier_name %}
+                            <span class="badge tier-badge tier-{{ offer.tier_name.replace(' ', '-').lower() }}"
+                                style="font-size: 0.6rem;">{{ tier_display(offer.tier_name) }}</span>
+                            {% endif %}
+                            <div class="fw-bold" style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                                <i class="bi bi-gem me-1"></i>{{ offer.cost }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -91,78 +110,74 @@
     {% endfor %}
 </div>
 
-<div class="d-flex flex-column flex-md-row align-items-center gap-3">
-    <form action="{{ url_for('my_store_refresh') }}" method="POST">
-        <button type="submit" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2 rounded-pill shadow-sm">
-            <i class="bi bi-arrow-clockwise"></i> {{ _('dash_refresh') }}
+<form action="{{ url_for('my_store_refresh') }}" method="POST">
+    <button type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-arrow-clockwise me-1"></i>{{ _('dash_refresh') }}
+    </button>
+</form>
+
+{% else %}
+<!-- No data yet -->
+<div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-shop-window"></i></div>
+    <h3>{{ _('dash_no_data') }}</h3>
+    <form action="{{ url_for('my_store_refresh') }}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-cloud-download me-1"></i>{{ _('dash_fetch_btn') }}
         </button>
     </form>
 </div>
-{% else %}
-<div class="card border-muted bg-muted/5 py-5 text-center border-0 shadow-sm rounded-xl">
-    <div class="card-body py-5">
-        <div class="mx-auto bg-muted rounded-circle d-flex align-items-center justify-content-center mb-4 opacity-50"
-            style="width: 100px; height: 100px;">
-            <i class="bi bi-shop-window display-3 text-muted"></i>
-        </div>
-        <h5 class="text-muted mb-4 fw-medium">{{ _('dash_no_data') }}</h5>
-        <form action="{{ url_for('my_store_refresh') }}" method="POST">
-            <button type="submit"
-                class="btn btn-primary btn-lg px-5 d-flex align-items-center gap-2 mx-auto rounded-pill shadow-sm">
-                <i class="bi bi-cloud-download"></i> {{ _('dash_fetch_btn') }}
-            </button>
-        </form>
-    </div>
-</div>
 {% endif %}
 
-<div class="row mt-5 g-4">
+<div class="separator" style="margin: 2rem 0;"></div>
+
+<!-- Quick links -->
+<div class="row g-3">
     <div class="col-md-4">
-        <div class="card h-100 hover-border-primary transition-all border-muted group bg-muted/5">
-            <div class="card-body p-4 d-flex flex-column">
-                <div
-                    class="bg-info bg-opacity-20 rounded-xl p-4 d-flex align-items-center justify-content-center mb-4 text-info group-hover-bg-info group-hover-text-white transition-all shadow-sm">
-                    <i class="bi bi-palette fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-2">{{ _('dash_browse_skins') }}</h5>
-                <p class="text-muted small mb-4 flex-grow-1">Explore the full catalog of Valorant weapon skins and
-                    variants.</p>
-                <a href="{{ url_for('skins_list') }}" class="btn btn-outline-info w-100 stretched-link rounded-pill">{{
-                    _('nav_skins') }}</a>
+        <a href="{{ url_for('skins_list') }}" class="quick-action">
+            <div class="quick-action-icon" style="color: hsl(220 70% 65%);">
+                <i class="bi bi-grid"></i>
             </div>
-        </div>
+            <div>
+                <div class="quick-action-title">{{ _('dash_browse_skins') }}</div>
+                <div class="quick-action-meta">{{ _('nav_skins') }}</div>
+            </div>
+        </a>
     </div>
     <div class="col-md-4">
-        <div class="card h-100 hover-border-warning transition-all border-muted group bg-muted/5">
-            <div class="card-body p-4 d-flex flex-column">
-                <div
-                    class="bg-warning bg-opacity-20 rounded-xl p-4 d-flex align-items-center justify-content-center mb-4 text-warning group-hover-bg-warning group-hover-text-black transition-all shadow-sm">
-                    <i class="bi bi-star fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-2">{{ _('dash_my_favorites') }}</h5>
-                <p class="text-muted small mb-4 flex-grow-1">Track specific skins and get alerts when they appear in
-                    your store.</p>
-                <a href="{{ url_for('my_favorites') }}"
-                    class="btn btn-outline-warning w-100 stretched-link rounded-pill">
-                    {{ _('nav_favorites') }} <span class="ms-1 opacity-50">({{ fav_count }})</span>
-                </a>
+        <a href="{{ url_for('my_favorites') }}" class="quick-action">
+            <div class="quick-action-icon" style="color: hsl(46 95% 70%);">
+                <i class="bi bi-star"></i>
             </div>
-        </div>
+            <div>
+                <div class="quick-action-title">{{ _('dash_my_favorites') }}</div>
+                <div class="quick-action-meta">{{ fav_count }} {{ _('nav_favorites') }}</div>
+            </div>
+        </a>
     </div>
     <div class="col-md-4">
-        <div class="card h-100 hover-border-secondary transition-all border-muted group bg-muted/5">
-            <div class="card-body p-4 d-flex flex-column">
-                <div
-                    class="bg-secondary bg-opacity-40 rounded-xl p-4 d-flex align-items-center justify-content-center mb-4 text-foreground group-hover-bg-secondary group-hover-text-white transition-all shadow-sm">
-                    <i class="bi bi-link-45deg fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-2">{{ _('dash_bind_account') }}</h5>
-                <p class="text-muted small mb-4 flex-grow-1">Securely connect your Riot account to fetch your daily
-                    offers.</p>
-                <a href="{{ url_for('bind_riot') }}" class="btn btn-outline-light w-100 stretched-link rounded-pill">{{
-                    _('nav_bind_riot') }}</a>
+        <a href="{{ url_for('bind_riot') }}" class="quick-action">
+            <div class="quick-action-icon" style="color: hsl(var(--primary));">
+                <i class="bi bi-link-45deg"></i>
             </div>
-        </div>
+            <div>
+                <div class="quick-action-title">{{ _('dash_bind_account') }}</div>
+                <div class="quick-action-meta">{{ _('nav_bind_riot') }}</div>
+            </div>
+        </a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function revealAll() {
+        const cards = document.querySelectorAll('.skin-flip-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('is-revealed');
+            }, index * 150);
+        });
+    }
+</script>
 {% endblock %}

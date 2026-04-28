@@ -1,7 +1,6 @@
 import json
 import logging
-from datetime import datetime
-from typing import Dict, Set
+from datetime import datetime, timezone
 
 import requests
 
@@ -30,21 +29,23 @@ LANG_MAP = {
 
 PRIMARY_LANG = "zh"
 
-# Valorant API Content Tier UUIDs to Base Prices (Guns)
-TIER_PRICES_GLOBAL = {
-    "12683d76-48d7-84a3-4e09-6985794f0445": 875,  # Select
+# Valorant API Content Tier UUIDs to Base Prices (VP)
+# 枪皮在每日商店中的标准价格
+TIER_PRICES = {
+    "12683d76-48d7-84a3-4e09-6985794f0445": 875,   # Select
     "0cebb8be-46d7-c12a-d306-e9907bfc5a25": 1275,  # Deluxe
     "60bca009-4182-7998-dee7-b8a2558dc369": 1775,  # Premium
-    "e046854e-406c-37f4-6607-19a9ba8426fc": 2175,  # Exclusive
+    "e046854e-406c-37f4-6607-19a9ba8426fc": 2475,  # Exclusive
     "411e4a55-4e59-7757-41f0-86a53f101bb5": 2475,  # Ultra
 }
 
-TIER_PRICES_CN = {
-    "12683d76-48d7-84a3-4e09-6985794f0445": 590,  # Select
-    "0cebb8be-46d7-c12a-d306-e9907bfc5a25": 890,  # Deluxe
-    "60bca009-4182-7998-dee7-b8a2558dc369": 1290,  # Premium
-    "e046854e-406c-37f4-6607-19a9ba8426fc": 1590,  # Exclusive
-    "411e4a55-4e59-7757-41f0-86a53f101bb5": 1990,  # Ultra
+# 近战武器各品质的标准价格
+MELEE_TIER_PRICES = {
+    "12683d76-48d7-84a3-4e09-6985794f0445": 1750,  # Select
+    "0cebb8be-46d7-c12a-d306-e9907bfc5a25": 2550,  # Deluxe
+    "60bca009-4182-7998-dee7-b8a2558dc369": 3550,  # Premium
+    "e046854e-406c-37f4-6607-19a9ba8426fc": 4950,  # Exclusive
+    "411e4a55-4e59-7757-41f0-86a53f101bb5": 4950,  # Ultra
 }
 
 TIER_DISPLAY_NAMES = {
@@ -56,7 +57,7 @@ TIER_DISPLAY_NAMES = {
 }
 
 
-def _fetch_skin_names(api_lang: str) -> Dict[str, str]:
+def _fetch_skin_names(api_lang: str) -> dict[str, str]:
     """获取指定语言的皮肤 level UUID -> displayName 映射"""
     try:
         resp = requests.get(SKINS_URL, params={"language": api_lang}, timeout=60)
@@ -77,11 +78,22 @@ def _fetch_skin_names(api_lang: str) -> Dict[str, str]:
         return {}
 
 
+def _is_tier_estimated(cost: int, is_melee: bool) -> bool:
+    """判断当前 cost 是否为等级估算值（而非商店实际价格）。
+
+    如果 cost 恰好等于某个等级的参考价格，则认为它是估算值，可以被覆盖。
+    """
+    all_prices = set((MELEE_TIER_PRICES if is_melee else TIER_PRICES).values())
+    # 也包含旧版 2x 乘算可能产生的值
+    old_2x = {p * 2 for p in TIER_PRICES.values()}
+    return cost in all_prices or cost in old_2x
+
+
 def refresh_skin_cache():
     logger.info("正在刷新皮肤缓存...")
 
     # 1. 获取近战武器皮肤 UUID 集合
-    melee_skin_uuids: Set[str] = set()
+    melee_skin_uuids: set[str] = set()
     try:
         resp = requests.get(WEAPONS_URL, timeout=30)
         resp.raise_for_status()
@@ -121,7 +133,7 @@ def refresh_skin_cache():
         return 0
 
     # 4. 获取其他语言的皮肤名称
-    i18n_names: Dict[str, Dict[str, str]] = {}
+    i18n_names: dict[str, dict[str, str]] = {}
     for lang, api_code in LANG_MAP.items():
         if lang == PRIMARY_LANG:
             continue
@@ -130,7 +142,7 @@ def refresh_skin_cache():
             i18n_names.setdefault(uuid, {})[lang] = name
 
     count = 0
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     for weapon_skin in skins_data:
         weapon_name = ""
@@ -144,22 +156,26 @@ def refresh_skin_cache():
         tier_uuid = weapon_skin.get("contentTierUuid")
         tier_info = tiers.get(tier_uuid, {})
 
-        # 刀皮价格通常是同品质枪皮的 2 倍
-        price_multiplier = 2 if is_melee else 1
-
-        # 修正：Select 级别的近战武器国际服价格通常是 1750 (875*2)
-        # 修正：Exclusive 级别的近战武器国际服价格通常是 4350 (2175*2)
-        base_price_global = TIER_PRICES_GLOBAL.get(tier_uuid)
-        base_price_cn = TIER_PRICES_CN.get(tier_uuid)
-
-        tier_price_global = (
-            base_price_global * price_multiplier if base_price_global else None
-        )
-        tier_price_cn = base_price_cn * price_multiplier if base_price_cn else None
-
         levels = weapon_skin.get("levels", [])
         if not levels:
             continue
+
+        # 判断是否为可单独购买的皮肤（非通行证/活动赠送）
+        # 通行证皮肤特征：无等级升级（VFX/动画等）且变色方案 < 4 个
+        # 近战皮肤无通行证款，始终视为可购买
+        has_upgrades = any(
+            lvl.get("levelItem") is not None for lvl in levels[1:]
+        )
+        chromas_count = len(weapon_skin.get("chromas", []))
+        is_purchasable = is_melee or has_upgrades or chromas_count >= 4
+
+        if is_purchasable and tier_uuid:
+            if is_melee:
+                tier_price = MELEE_TIER_PRICES.get(tier_uuid)
+            else:
+                tier_price = TIER_PRICES.get(tier_uuid)
+        else:
+            tier_price = None
 
         base_level = levels[0]
         uuid = base_level.get("uuid")
@@ -178,8 +194,11 @@ def refresh_skin_cache():
             skin.icon_url = base_level.get("displayIcon")
             skin.tier_name = tier_info.get("name")
             skin.tier_icon = tier_info.get("icon")
-            skin.cost = tier_price_global
-            skin.cost_cn = tier_price_cn
+            # 仅在皮肤尚无价格（或仍是旧估算值）时才用等级价格覆盖
+            # 如果皮肤已通过商店 API 获得了实际价格，则保留实际价格
+            if tier_price is not None:
+                if skin.cost is None or _is_tier_estimated(skin.cost, is_melee):
+                    skin.cost = tier_price
             skin.weapon_name = weapon_name
             skin.is_melee = is_melee
             skin.updated_at = now
@@ -191,8 +210,7 @@ def refresh_skin_cache():
                 icon_url=base_level.get("displayIcon"),
                 tier_name=tier_info.get("name"),
                 tier_icon=tier_info.get("icon"),
-                cost=tier_price_global,
-                cost_cn=tier_price_cn,
+                cost=tier_price,
                 weapon_name=weapon_name,
                 is_melee=is_melee,
                 updated_at=now,
@@ -223,7 +241,7 @@ def get_skin(uuid: str):
                 uuid=uuid,
                 name=data.get("displayName", "未知皮肤"),
                 icon_url=data.get("displayIcon"),
-                updated_at=datetime.utcnow(),
+                updated_at=datetime.now(timezone.utc).replace(tzinfo=None),
             )
             db.session.add(skin)
             db.session.commit()
@@ -238,7 +256,7 @@ def is_cache_stale() -> bool:
     latest = db.session.query(Skin.updated_at).order_by(Skin.updated_at.desc()).first()
     if not latest or not latest[0]:
         return True
-    delta = datetime.utcnow() - latest[0]
+    delta = datetime.now(timezone.utc).replace(tzinfo=None) - latest[0]
     return delta.total_seconds() > 86400
 
 

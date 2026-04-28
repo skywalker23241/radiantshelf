@@ -2,77 +2,66 @@
 {% block title %}管理面板 - Valorant 每日商店{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-shield-lock"></i> 管理面板</h2>
+<div class="page-header">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2">
+        <div>
+            <h1>管理面板</h1>
+            <p>查看用户绑定、通知任务和皮肤缓存状态。</p>
+        </div>
+        <span class="status-chip">
+            <span class="status-dot"></span>
+            Admin
+        </span>
+    </div>
+</div>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card text-center border-primary">
-            <div class="card-body">
-                <h5 class="card-title text-primary"><i class="bi bi-people-fill"></i></h5>
-                <h3>{{ user_count }}</h3>
-                <p class="card-text text-muted">注册用户</p>
-            </div>
-        </div>
+<div class="stat-grid">
+    <div class="stat-tile">
+        <div class="stat-icon text-primary"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-value">{{ user_count }}</div>
+        <div class="stat-label">注册用户</div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center border-success">
-            <div class="card-body">
-                <h5 class="card-title text-success"><i class="bi bi-link-45deg"></i></h5>
-                <h3>{{ bound_count }}</h3>
-                <p class="card-text text-muted">已绑定 Riot</p>
-            </div>
-        </div>
+    <div class="stat-tile">
+        <div class="stat-icon" style="color: hsl(160 60% 60%);"><i class="bi bi-link-45deg"></i></div>
+        <div class="stat-value">{{ bound_count }}</div>
+        <div class="stat-label">已绑定 Riot</div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center border-info">
-            <div class="card-body">
-                <h5 class="card-title text-info"><i class="bi bi-bell-fill"></i></h5>
-                <h3>{{ webhook_count }}</h3>
-                <p class="card-text text-muted">活跃 Webhook</p>
-            </div>
-        </div>
+    <div class="stat-tile">
+        <div class="stat-icon" style="color: hsl(220 70% 65%);"><i class="bi bi-bell-fill"></i></div>
+        <div class="stat-value">{{ webhook_count }}</div>
+        <div class="stat-label">活跃 Webhook</div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center border-warning">
-            <div class="card-body">
-                <h5 class="card-title text-warning"><i class="bi bi-shop"></i></h5>
-                <h3>{{ today_offers }}</h3>
-                <p class="card-text text-muted">今日商品</p>
-            </div>
-        </div>
+    <div class="stat-tile">
+        <div class="stat-icon" style="color: hsl(46 95% 70%);"><i class="bi bi-shop"></i></div>
+        <div class="stat-value">{{ today_offers }}</div>
+        <div class="stat-label">今日商品</div>
     </div>
 </div>
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title"><i class="bi bi-clock"></i> 定时任务</h5>
+        <h2 class="section-kicker mb-3"><i class="bi bi-clock me-1"></i>定时任务</h2>
         {% if next_run %}
-        <p>下次自动检查: <strong>{{ next_run }}</strong></p>
+        <p class="mb-2">下次自动检查: <strong>{{ next_run }}</strong></p>
         {% else %}
-        <p class="text-muted">定时任务未运行</p>
+        <p class="text-muted mb-2">定时任务未运行</p>
         {% endif %}
-        <p>皮肤缓存: <strong>{{ skin_count }}</strong> 个皮肤</p>
+        <p class="mb-0">皮肤缓存: <strong>{{ skin_count }}</strong> 个皮肤</p>
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_users') }}" class="btn btn-primary btn-lg w-100">
-            <i class="bi bi-people"></i> 用户管理
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="{{ url_for('admin_settings') }}" class="btn btn-secondary btn-lg w-100">
-            <i class="bi bi-gear"></i> 系统设置
-        </a>
-    </div>
-    <div class="col-md-4">
-        <form action="{{ url_for('admin_check_now') }}" method="POST">
-            <button type="submit" class="btn btn-warning btn-lg w-100"
-                    onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> 检查中...'; this.form.submit();">
-                <i class="bi bi-play-fill"></i> 立即检查所有用户
-            </button>
-        </form>
-    </div>
+<div class="admin-actions">
+    <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
+        <i class="bi bi-people"></i> 用户管理
+    </a>
+    <a href="{{ url_for('admin_settings') }}" class="btn btn-secondary">
+        <i class="bi bi-gear"></i> 系统设置
+    </a>
+    <form action="{{ url_for('admin_check_now') }}" method="POST">
+        <button type="submit" class="btn btn-outline-primary w-100"
+                onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> 检查中...'; this.form.submit();">
+            <i class="bi bi-play-fill"></i> 立即检查所有用户
+        </button>
+    </form>
 </div>
 {% endblock %}
