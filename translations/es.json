@@ -65,7 +65,7 @@
   "bind_step2_title": "Iniciar Sesión en tu Cuenta Valorant",
   "bind_step2_desc": "Inicia sesión con la cuenta Valorant que deseas vincular en la página oficial de Riot.",
   "bind_step2_btn": "Iniciar Sesión Riot",
-  "bind_step2_guide_1": "Después de iniciar sesión, la página puede aparecer en blanco o mostrar \"Something went wrong\" — esto es normal.",
+  "bind_step2_guide_1": "Después de iniciar sesión, la página puede aparecer en blanco o mostrar \"Something went wrong/404\" — esto es normal.",
   "bind_step2_guide_2": "No cierres la página, continúa con el siguiente paso.",
   "bind_step2_guide_3": "Tu contraseña es procesada directamente por Riot y nunca es almacenada por nosotros.",
   "bind_step3_title": "Copiar y Pegar URL",

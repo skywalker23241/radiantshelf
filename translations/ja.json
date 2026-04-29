@@ -65,7 +65,7 @@
   "bind_step2_title": "Valorantアカウントにログイン",
   "bind_step2_desc": "Riot公式ページで連携したいValorantアカウントにログインします。",
   "bind_step2_btn": "Riotログイン",
-  "bind_step2_guide_1": "ログイン後、ページが空白になったり「Something went wrong」と表示されることがありますが、これは正常です。",
+  "bind_step2_guide_1": "ログイン後、ページが空白になったり「Something went wrong/404」と表示されることがありますが、これは正常です。",
   "bind_step2_guide_2": "ページを閉じずに、次のステップに進んでください。",
   "bind_step2_guide_3": "パスワードはRiot公式が処理し、本サイトでは一切保存しません。",
   "bind_step3_title": "URLをコピーして貼り付け",

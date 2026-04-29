@@ -65,7 +65,7 @@
   "bind_step2_title": "Valorant 계정으로 로그인",
   "bind_step2_desc": "Riot 공식 페이지에서 연동할 Valorant 계정으로 로그인하세요.",
   "bind_step2_btn": "Riot 로그인",
-  "bind_step2_guide_1": "로그인 후 페이지가 비어 있거나 \"Something went wrong\"이 표시될 수 있습니다. 이는 정상입니다.",
+  "bind_step2_guide_1": "로그인 후 페이지가 비어 있거나 \"Something went wrong/404\"이 표시될 수 있습니다. 이는 정상입니다.",
   "bind_step2_guide_2": "페이지를 닫지 말고 다음 단계로 진행하세요.",
   "bind_step2_guide_3": "비밀번호는 Riot에서 직접 처리하며, 본 사이트에서는 저장하지 않습니다.",
   "bind_step3_title": "URL 복사 및 붙여넣기",

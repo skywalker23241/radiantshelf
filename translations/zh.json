@@ -69,7 +69,7 @@
   "bind_step2_title": "登录 Valorant 账号",
   "bind_step2_desc": "在 Riot 官方页面登录你要绑定的 Valorant 账号。",
   "bind_step2_btn": "登录 Riot",
-  "bind_step2_guide_1": "登录成功后，页面可能显示空白或 \"Something went wrong\"，这是正常现象。",
+  "bind_step2_guide_1": "登录成功后，页面可能显示空白或 \"Something went wrong/404\"，这是正常现象。",
   "bind_step2_guide_2": "请不要关闭该页面，继续下一步。",
   "bind_step2_guide_3": "你的密码由 Riot 官方处理，本站不会接触到你的密码。",
   "bind_step3_title": "复制并粘贴 URL",

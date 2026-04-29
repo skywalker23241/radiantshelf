@@ -65,7 +65,7 @@
   "bind_step2_title": "Entrar na Conta Valorant",
   "bind_step2_desc": "Entre na conta Valorant que deseja vincular na página oficial da Riot.",
   "bind_step2_btn": "Entrar na Riot",
-  "bind_step2_guide_1": "Após o login, a página pode ficar em branco ou mostrar \"Something went wrong\" — isso é normal.",
+  "bind_step2_guide_1": "Após o login, a página pode ficar em branco ou mostrar \"Something went wrong/404\" — isso é normal.",
   "bind_step2_guide_2": "Não feche a página, prossiga para o próximo passo.",
   "bind_step2_guide_3": "Sua senha é processada diretamente pela Riot e nunca é armazenada por nós.",
   "bind_step3_title": "Copiar e Colar URL",

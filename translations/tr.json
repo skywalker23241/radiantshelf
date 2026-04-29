@@ -65,7 +65,7 @@
   "bind_step2_title": "Valorant Hesabınıza Giriş Yapın",
   "bind_step2_desc": "Resmi Riot sayfasında bağlamak istediğiniz Valorant hesabıyla giriş yapın.",
   "bind_step2_btn": "Riot Giriş",
-  "bind_step2_guide_1": "Giriş yaptıktan sonra sayfa boş görünebilir veya \"Something went wrong\" gösterebilir — bu normaldir.",
+  "bind_step2_guide_1": "Giriş yaptıktan sonra sayfa boş görünebilir veya \"Something went wrong/404\" gösterebilir — bu normaldir.",
   "bind_step2_guide_2": "Sayfayı kapatmayın, sonraki adıma geçin.",
   "bind_step2_guide_3": "Şifreniz doğrudan Riot tarafından işlenir ve tarafımızca asla saklanmaz.",
   "bind_step3_title": "URL'yi Kopyala ve Yapıştır",

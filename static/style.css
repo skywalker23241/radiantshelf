@@ -135,7 +135,7 @@ a:hover {
 .brand-mark {
     width: 28px;
     height: 28px;
-    background-color: hsl(var(--primary));
+    background-color: hsl(var(--background));
     border-radius: calc(var(--radius) - 2px);
     display: inline-flex;
     align-items: center;
@@ -143,6 +143,24 @@ a:hover {
     color: #fff;
     font-size: 0.8rem;
     box-shadow: 0 0 15px hsl(var(--primary) / 0.3);
+}
+
+.brand-logo,
+.auth-logo {
+    display: inline-block;
+    object-fit: contain;
+    filter: drop-shadow(0 0 12px hsl(var(--primary) / 0.32));
+}
+
+.brand-logo {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+}
+
+.auth-logo {
+    width: 48px;
+    height: 48px;
 }
 
 .navbar-toggler {
@@ -1434,6 +1452,210 @@ textarea.form-control {
     color: hsl(var(--muted-foreground));
 }
 
+.bind-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.bind-guide-panel,
+.bind-form-card,
+.bind-account-card {
+    border: 1px solid hsl(var(--border) / 0.9);
+    border-radius: var(--radius);
+    background: hsl(var(--card) / 0.62);
+    backdrop-filter: blur(18px);
+}
+
+.bind-guide-panel {
+    padding: 1.25rem;
+}
+
+.bind-step {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 1rem;
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.bind-step:last-child {
+    padding-bottom: 0;
+}
+
+.bind-step:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 0.9375rem;
+    top: 2.375rem;
+    bottom: 0.25rem;
+    width: 1px;
+    background: hsl(var(--border));
+}
+
+.bind-step-marker {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    color: hsl(var(--primary-foreground));
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.12);
+    font-size: 0.8125rem;
+    font-weight: 800;
+}
+
+.bind-step-content h2 {
+    margin: 0;
+    color: hsl(var(--foreground));
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.bind-step-content p {
+    margin: 0.45rem 0 0.875rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.875rem;
+    line-height: 1.7;
+}
+
+.bind-step-content details {
+    margin-top: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.8125rem;
+}
+
+.bind-step-content summary {
+    cursor: pointer;
+    width: max-content;
+    color: hsl(var(--muted-foreground));
+    font-weight: 650;
+}
+
+.bind-step-content ul {
+    margin: 0.625rem 0 0;
+    padding-left: 1.1rem;
+    line-height: 1.7;
+}
+
+.bind-code-note {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+    padding: 0.75rem;
+    border: 1px solid hsl(var(--border) / 0.75);
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--background) / 0.42);
+}
+
+.bind-code-note code {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: hsl(var(--foreground));
+    font-size: 0.75rem;
+}
+
+.bind-form-panel {
+    display: grid;
+    gap: 0.875rem;
+    position: sticky;
+    top: 5.75rem;
+}
+
+.bind-form-card {
+    overflow: hidden;
+}
+
+.bind-form-header {
+    padding: 1.25rem 1.25rem 0;
+}
+
+.bind-form-header h2 {
+    margin: 0;
+    color: hsl(var(--foreground));
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.bind-form-header p {
+    margin: 0.35rem 0 0;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.8125rem;
+}
+
+.bind-form-card form {
+    padding: 1.25rem;
+}
+
+.bind-token-input {
+    min-height: 8rem;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+}
+
+.bind-token-note {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid hsl(var(--border) / 0.75);
+    color: hsl(var(--muted-foreground));
+    background: hsl(var(--background) / 0.26);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+}
+
+.bind-token-note i {
+    color: hsl(46 95% 70%);
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+}
+
+.bind-account-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+}
+
+.bind-account-card span,
+.bind-account-card small {
+    display: block;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+
+.bind-account-card strong {
+    display: block;
+    margin: 0.15rem 0;
+    color: hsl(var(--foreground));
+    font-size: 0.9375rem;
+}
+
+.bind-back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.bind-back-link:hover {
+    color: hsl(var(--foreground));
+}
+
 .search-shell {
     display: flex;
     gap: 0.75rem;
@@ -1793,8 +2015,13 @@ textarea.form-control {
     .dashboard-summary,
     .stat-grid,
     .settings-grid,
-    .admin-actions {
+    .admin-actions,
+    .bind-layout {
         grid-template-columns: 1fr;
+    }
+
+    .bind-form-panel {
+        position: static;
     }
 
     .admin-status-list {

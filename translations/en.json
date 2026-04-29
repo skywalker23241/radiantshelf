@@ -69,7 +69,7 @@
   "bind_step2_title": "Log In to Your Valorant Account",
   "bind_step2_desc": "Log in to the Valorant account you want to link on the official Riot page.",
   "bind_step2_btn": "Log In Riot",
-  "bind_step2_guide_1": "After logging in, the page may appear blank or show \"Something went wrong\" — this is normal.",
+  "bind_step2_guide_1": "After logging in, the page may appear blank or show \"Something went wrong/404\" — this is normal.",
   "bind_step2_guide_2": "Do not close the page, proceed to the next step.",
   "bind_step2_guide_3": "Your password is handled directly by Riot and is never stored by us.",
   "bind_step3_title": "Copy and Paste URL",
