@@ -15,8 +15,8 @@
 </div>
 
 {% if users %}
-<div class="table-responsive table-shell">
-    <table class="table table-hover">
+<div class="table-responsive table-shell admin-table-shell">
+    <table class="table table-hover admin-table">
         <thead>
             <tr>
                 <th>用户名</th>
@@ -31,41 +31,43 @@
         <tbody>
         {% for user in users %}
             <tr>
-                <td><code>{{ user.login_name }}</code></td>
-                <td>{{ user.display_name or '-' }}</td>
+                <td><code class="admin-code">{{ user.login_name }}</code></td>
+                <td>
+                    <span class="admin-strong">{{ user.display_name or '-' }}</span>
+                </td>
                 <td>
                     {% if user.is_admin %}
-                    <span class="badge bg-danger">管理员</span>
+                    <span class="admin-badge admin-badge-danger">管理员</span>
                     {% else %}
-                    <span class="badge bg-secondary">用户</span>
+                    <span class="admin-badge">用户</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if user.riot_bound %}
-                    <span class="badge bg-success">{{ user.riot_username }}</span>
+                    <span class="admin-badge admin-badge-success">{{ user.riot_username }}</span>
                     {% else %}
-                    <span class="text-muted">未绑定</span>
+                    <span class="admin-muted">未绑定</span>
                     {% endif %}
                 </td>
-                <td>{{ user.region | upper if user.region else '-' }}</td>
-                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</td>
+                <td><span class="admin-region">{{ user.region | upper if user.region else '-' }}</span></td>
+                <td><span class="admin-muted">{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</span></td>
                 <td>
-                    <div class="btn-group btn-group-sm">
+                    <div class="admin-row-actions">
                         {% if user.id != current_user.id %}
                         <form action="{{ url_for('admin_toggle_admin', user_id=user.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-outline-{% if user.is_admin %}warning{% else %}info{% endif %}"
+                            <button type="submit" class="admin-icon-btn {% if user.is_admin %}is-warning{% else %}is-info{% endif %}"
                                     title="{% if user.is_admin %}取消管理员{% else %}设为管理员{% endif %}">
                                 <i class="bi bi-shield{% if user.is_admin %}-fill{% endif %}"></i>
                             </button>
                         </form>
                         <form action="{{ url_for('admin_user_delete', user_id=user.id) }}" method="POST" class="d-inline"
                               onsubmit="return confirm('确定要删除用户 {{ user.login_name }} 吗？')">
-                            <button type="submit" class="btn btn-outline-danger" title="删除">
+                            <button type="submit" class="admin-icon-btn is-danger" title="删除">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
                         {% else %}
-                        <span class="text-muted small">当前用户</span>
+                        <span class="admin-current-user">当前用户</span>
                         {% endif %}
                     </div>
                 </td>

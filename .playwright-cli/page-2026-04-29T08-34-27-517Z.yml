@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link " Valorant Daily Store" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: 
+        - text: Valorant Daily Store
+      - generic [ref=e7]:
+        - list [ref=e8]:
+          - listitem [ref=e9]:
+            - link "My Store" [ref=e10] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=e11]:
+            - link "Skins" [ref=e12] [cursor=pointer]:
+              - /url: /skins
+          - listitem [ref=e13]:
+            - link "Favorites" [ref=e14] [cursor=pointer]:
+              - /url: /my/favorites
+          - listitem [ref=e15]:
+            - link "Rename" [ref=e16] [cursor=pointer]:
+              - /url: https://val.qq.com/act/a20230727rename/
+          - listitem [ref=e17]:
+            - button "Admin" [ref=e18] [cursor=pointer]
+        - list [ref=e19]:
+          - listitem [ref=e20]:
+            - button "English" [ref=e21] [cursor=pointer]
+          - listitem [ref=e22]:
+            - button "管理员" [ref=e23] [cursor=pointer]
+            - text:  
+  - main [ref=e24]:
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - heading "管理面板" [level=1] [ref=e28]
+        - paragraph [ref=e29]: 查看用户绑定、通知任务和皮肤缓存状态。
+      - generic [ref=e30]: Admin
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e35]: 
+        - generic [ref=e36]: "2"
+        - generic [ref=e37]: 注册用户
+      - generic [ref=e38]:
+        - generic [ref=e40]: 
+        - generic [ref=e41]: "2"
+        - generic [ref=e42]: 已绑定 Riot
+      - generic [ref=e43]:
+        - generic [ref=e45]: 
+        - generic [ref=e46]: "0"
+        - generic [ref=e47]: 活跃 Webhook
+      - generic [ref=e48]:
+        - generic [ref=e50]: 
+        - generic [ref=e51]: "4"
+        - generic [ref=e52]: 今日商品
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - heading " 定时任务" [level=2] [ref=e57]:
+              - generic [ref=e58]: 
+              - text: 定时任务
+            - paragraph [ref=e59]: 自动检查、商店抓取和本地缓存状态。
+          - generic [ref=e60]: 运行中
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - generic [ref=e63]: 下次自动检查
+            - strong [ref=e64]: 2026-04-30 08:00:00
+          - generic [ref=e65]:
+            - generic [ref=e66]: 皮肤缓存
+            - strong [ref=e67]: 1339 个皮肤
+      - generic [ref=e68]:
+        - link " 用户管理" [ref=e69] [cursor=pointer]:
+          - /url: /admin/users
+          - generic [ref=e70]: 
+          - text: 用户管理
+        - link " 系统设置" [ref=e71] [cursor=pointer]:
+          - /url: /admin/settings
+          - generic [ref=e72]: 
+          - text: 系统设置
+        - button " 立即检查所有用户" [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: 
+          - text: 立即检查所有用户
+  - contentinfo [ref=e76]:
+    - generic [ref=e77]:
+      - generic [ref=e78]: Valorant Daily Store Tracker
+      - link "GitHub repository" [ref=e79] [cursor=pointer]:
+        - /url: https://github.com/skywalker23241/valorant-daily-shop-webhook-tool
+        - generic [ref=e80]: 

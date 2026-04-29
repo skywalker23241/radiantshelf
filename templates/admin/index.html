@@ -38,30 +38,42 @@
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="section-kicker mb-3"><i class="bi bi-clock me-1"></i>定时任务</h2>
-        {% if next_run %}
-        <p class="mb-2">下次自动检查: <strong>{{ next_run }}</strong></p>
-        {% else %}
-        <p class="text-muted mb-2">定时任务未运行</p>
-        {% endif %}
-        <p class="mb-0">皮肤缓存: <strong>{{ skin_count }}</strong> 个皮肤</p>
-    </div>
-</div>
+<div class="admin-overview">
+    <section class="admin-panel">
+        <div class="admin-panel-header">
+            <div>
+                <h2><i class="bi bi-clock-history"></i> 定时任务</h2>
+                <p>自动检查、商店抓取和本地缓存状态。</p>
+            </div>
+            <span class="admin-health {% if next_run %}is-on{% else %}is-off{% endif %}">
+                {% if next_run %}运行中{% else %}未运行{% endif %}
+            </span>
+        </div>
+        <div class="admin-status-list">
+            <div>
+                <span>下次自动检查</span>
+                <strong>{{ next_run if next_run else '暂无计划' }}</strong>
+            </div>
+            <div>
+                <span>皮肤缓存</span>
+                <strong>{{ skin_count }} 个皮肤</strong>
+            </div>
+        </div>
+    </section>
 
-<div class="admin-actions">
-    <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
-        <i class="bi bi-people"></i> 用户管理
-    </a>
-    <a href="{{ url_for('admin_settings') }}" class="btn btn-secondary">
-        <i class="bi bi-gear"></i> 系统设置
-    </a>
-    <form action="{{ url_for('admin_check_now') }}" method="POST">
-        <button type="submit" class="btn btn-outline-primary w-100"
-                onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> 检查中...'; this.form.submit();">
-            <i class="bi bi-play-fill"></i> 立即检查所有用户
-        </button>
-    </form>
+    <div class="admin-actions">
+        <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
+            <i class="bi bi-people"></i> 用户管理
+        </a>
+        <a href="{{ url_for('admin_settings') }}" class="btn btn-secondary">
+            <i class="bi bi-gear"></i> 系统设置
+        </a>
+        <form action="{{ url_for('admin_check_now') }}" method="POST">
+            <button type="submit" class="btn btn-outline-primary w-100"
+                    onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> 检查中...'; this.form.submit();">
+                <i class="bi bi-play-fill"></i> 立即检查所有用户
+            </button>
+        </form>
+    </div>
 </div>
 {% endblock %}

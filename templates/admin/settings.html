@@ -16,18 +16,29 @@
 
 <div class="settings-grid">
     <div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title"><i class="bi bi-clock me-1"></i>定时任务</div>
-                <p class="card-description">手动触发检查或刷新本地皮肤缓存。</p>
+        <div class="admin-panel">
+            <div class="admin-panel-header">
+                <div>
+                    <h2><i class="bi bi-clock-history"></i> 定时任务</h2>
+                    <p>手动触发检查或刷新本地皮肤缓存。</p>
+                </div>
+                <span class="admin-health {% if next_run %}is-on{% else %}is-off{% endif %}">
+                    {% if next_run %}运行中{% else %}未运行{% endif %}
+                </span>
             </div>
-            <div class="card-body">
+            <div class="admin-panel-body">
                 {% if next_run %}
-                <p>下次自动检查: <strong>{{ next_run }}</strong></p>
+                <div class="admin-inline-stat">
+                    <span>下次自动检查</span>
+                    <strong>{{ next_run }}</strong>
+                </div>
                 {% else %}
-                <p class="text-muted">定时任务未运行</p>
+                <div class="admin-inline-stat">
+                    <span>任务状态</span>
+                    <strong>暂无计划</strong>
+                </div>
                 {% endif %}
-                <div class="d-flex gap-2">
+                <div class="admin-form-actions">
                     <form action="{{ url_for('admin_check_now') }}" method="POST">
                         <button type="submit" class="btn btn-primary"
                                 onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> 检查中...'; this.form.submit();">
@@ -45,12 +56,14 @@
     </div>
 
     <div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title"><i class="bi bi-bell me-1"></i>添加 Webhook</div>
-                <p class="card-description">用于推送每日商店检查结果。</p>
+        <div class="admin-panel">
+            <div class="admin-panel-header">
+                <div>
+                    <h2><i class="bi bi-bell"></i> 添加 Webhook</h2>
+                    <p>用于推送每日商店检查结果。</p>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="admin-panel-body">
                 <form method="POST" action="{{ url_for('admin_webhook_add') }}">
                     <div class="mb-2">
                         <input type="text" class="form-control" name="name" placeholder="名称（如：微信通知）" required>
@@ -67,15 +80,17 @@
     </div>
 </div>
 
-<div class="card mt-4">
-    <div class="card-header">
-        <div class="card-title"><i class="bi bi-list me-1"></i>Webhook 列表</div>
-        <p class="card-description">启用、测试或删除已配置的通知端点。</p>
+<div class="admin-panel mt-4">
+    <div class="admin-panel-header">
+        <div>
+            <h2><i class="bi bi-list-ul"></i> Webhook 列表</h2>
+            <p>启用、测试或删除已配置的通知端点。</p>
+        </div>
     </div>
-    <div class="card-body">
+    <div class="admin-panel-body">
         {% if webhooks %}
-        <div class="table-responsive table-shell">
-            <table class="table table-hover align-middle">
+        <div class="table-responsive table-shell admin-table-shell">
+            <table class="table table-hover align-middle admin-table">
                 <thead>
                     <tr>
                         <th>名称</th>
@@ -88,32 +103,32 @@
                 <tbody>
                 {% for wh in webhooks %}
                     <tr>
-                        <td>{{ wh.name }}</td>
-                        <td><code class="text-truncate d-inline-block" style="max-width:250px" title="{{ wh.url }}">{{ wh.url }}</code></td>
+                        <td><span class="admin-strong">{{ wh.name }}</span></td>
+                        <td><code class="admin-code text-truncate d-inline-block" style="max-width:250px" title="{{ wh.url }}">{{ wh.url }}</code></td>
                         <td>
                             {% if wh.is_active %}
-                            <span class="badge bg-success">启用</span>
+                            <span class="admin-badge admin-badge-success">启用</span>
                             {% else %}
-                            <span class="badge bg-secondary">禁用</span>
+                            <span class="admin-badge">禁用</span>
                             {% endif %}
                         </td>
-                        <td>{{ wh.created_at.strftime('%Y-%m-%d %H:%M') if wh.created_at else '-' }}</td>
+                        <td><span class="admin-muted">{{ wh.created_at.strftime('%Y-%m-%d %H:%M') if wh.created_at else '-' }}</span></td>
                         <td>
-                            <div class="btn-group btn-group-sm">
+                            <div class="admin-row-actions">
                                 <form action="{{ url_for('admin_webhook_toggle', wh_id=wh.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-{% if wh.is_active %}secondary{% else %}success{% endif %}"
+                                    <button type="submit" class="admin-icon-btn {% if wh.is_active %}is-muted{% else %}is-success{% endif %}"
                                             title="{% if wh.is_active %}禁用{% else %}启用{% endif %}">
                                         <i class="bi bi-{% if wh.is_active %}pause{% else %}play{% endif %}-fill"></i>
                                     </button>
                                 </form>
                                 <form action="{{ url_for('admin_webhook_test', wh_id=wh.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-info" title="发送测试">
+                                    <button type="submit" class="admin-icon-btn is-info" title="发送测试">
                                         <i class="bi bi-send"></i>
                                     </button>
                                 </form>
                                 <form action="{{ url_for('admin_webhook_delete', wh_id=wh.id) }}" method="POST" class="d-inline"
                                       onsubmit="return confirm('确定要删除此 Webhook 吗？')">
-                                    <button type="submit" class="btn btn-outline-danger" title="删除">
+                                    <button type="submit" class="admin-icon-btn is-danger" title="删除">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
