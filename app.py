@@ -18,6 +18,12 @@ from i18n import init_i18n
 from i18n import translate as _
 from models import Favorite, Skin, StoreOffer, User, WebhookConfig, db
 from riot_auth import AuthenticationError, RiotAuth
+from security import (
+    get_csrf_token,
+    is_safe_redirect_url,
+    validate_csrf_token,
+    validate_webhook_url,
+)
 from skin_cache import is_cache_stale, refresh_skin_cache, search_skins
 from store_api import detect_shard_by_token, get_user_store
 
@@ -69,6 +75,27 @@ def create_app() -> Flask:
     def load_user(user_id: str) -> Optional[User]:
         return db.session.get(User, int(user_id))
 
+    @app.before_request
+    def protect_state_changing_requests():
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            validate_csrf_token()
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault(
+            "Referrer-Policy", "strict-origin-when-cross-origin"
+        )
+        response.headers.setdefault(
+            "Permissions-Policy", "geolocation=(), microphone=(), camera=()"
+        )
+        return response
+
+    @app.context_processor
+    def inject_security_helpers():
+        return {"csrf_token": get_csrf_token}
+
     with app.app_context():
         db.create_all()
 
@@ -89,13 +116,26 @@ def create_app() -> Flask:
 
         if not User.query.filter_by(is_admin=True).first():
             admin = User()
-            admin.login_name = "admin"
-            admin.display_name = "管理员"
-            admin.is_admin = True
-            admin.set_login_password("admin123")
-            db.session.add(admin)
-            db.session.commit()
-            logger.info("已创建默认管理员账号: admin / admin123")
+            if Config.ADMIN_USERNAME and Config.ADMIN_PASSWORD:
+                admin.login_name = Config.ADMIN_USERNAME
+                admin.set_login_password(Config.ADMIN_PASSWORD)
+            elif Config.ALLOW_DEFAULT_ADMIN:
+                admin.login_name = "admin"
+                admin.set_login_password("admin123")
+                logger.warning("已创建默认管理员账号: admin / admin123，请仅在本地开发使用")
+            else:
+                admin = None
+
+            if admin is not None:
+                admin.display_name = "管理员"
+                admin.is_admin = True
+                db.session.add(admin)
+                db.session.commit()
+                logger.info("已创建管理员账号")
+            else:
+                logger.warning(
+                    "未发现管理员账号。请设置 ADMIN_USERNAME 和 ADMIN_PASSWORD 后重启应用。"
+                )
 
         if is_cache_stale():
             try:
@@ -132,7 +172,9 @@ def create_app() -> Flask:
 
         login_user(user, remember=True)
         next_page = request.args.get("next")
-        return redirect(next_page or url_for("dashboard"))
+        if next_page and is_safe_redirect_url(next_page):
+            return redirect(next_page)
+        return redirect(url_for("dashboard"))
 
     @app.route("/register", methods=["GET", "POST"])
     def register():
@@ -222,9 +264,13 @@ def create_app() -> Flask:
         user = _current_user()
         access_url = request.form.get("access_url", "").strip()
         region = request.form.get("region", "ap")
+        valid_regions = {code for code, _ in REGIONS}
 
         if not access_url:
             flash(_("flash_bind_no_url"), "danger")
+            return redirect(url_for("bind_riot"))
+        if region not in valid_regions:
+            flash("无效的区服选择", "danger")
             return redirect(url_for("bind_riot"))
 
         try:
@@ -368,6 +414,8 @@ def create_app() -> Flask:
             skin_uuid = value if isinstance(value, str) else None
         if not skin_uuid:
             return jsonify({"error": "缺少皮肤UUID"}), 400
+        if not db.session.get(Skin, skin_uuid):
+            return jsonify({"error": "皮肤不存在"}), 404
 
         existing = Favorite.query.filter_by(
             user_id=user_id, skin_uuid=skin_uuid
@@ -468,6 +516,11 @@ def create_app() -> Flask:
         url = request.form.get("url", "").strip()
         if not name or not url:
             flash("请填写名称和 URL", "danger")
+            return redirect(url_for("admin_settings"))
+        try:
+            validate_webhook_url(url)
+        except ValueError as e:
+            flash(str(e), "danger")
             return redirect(url_for("admin_settings"))
         wh = WebhookConfig()
         wh.name = name

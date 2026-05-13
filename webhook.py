@@ -2,7 +2,8 @@ import logging
 import time
 from datetime import datetime
 import requests
-from models import db, User, WebhookConfig, Favorite
+from models import User, WebhookConfig
+from security import validate_webhook_url
 from store_api import get_user_store
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 def send_webhook(url: str, payload: dict) -> bool:
     try:
+        validate_webhook_url(url)
         resp = requests.post(url, json=payload, timeout=10)
         resp.raise_for_status()
         logger.info(f"Webhook 发送成功: {url}")

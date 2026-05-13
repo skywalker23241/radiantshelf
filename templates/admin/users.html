@@ -55,6 +55,7 @@
                     <div class="admin-row-actions">
                         {% if user.id != current_user.id %}
                         <form action="{{ url_for('admin_toggle_admin', user_id=user.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="admin-icon-btn {% if user.is_admin %}is-warning{% else %}is-info{% endif %}"
                                     title="{% if user.is_admin %}取消管理员{% else %}设为管理员{% endif %}">
                                 <i class="bi bi-shield{% if user.is_admin %}-fill{% endif %}"></i>
@@ -62,6 +63,7 @@
                         </form>
                         <form action="{{ url_for('admin_user_delete', user_id=user.id) }}" method="POST" class="d-inline"
                               onsubmit="return confirm('确定要删除用户 {{ user.login_name }} 吗？')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="admin-icon-btn is-danger" title="删除">
                                 <i class="bi bi-trash"></i>
                             </button>

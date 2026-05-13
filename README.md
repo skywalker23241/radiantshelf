@@ -88,6 +88,9 @@ pip install -r requirements.txt
 ```powershell
 $env:SECRET_KEY="replace-with-a-long-random-secret"
 $env:FERNET_KEY="replace-with-a-fernet-key"
+$env:SESSION_COOKIE_SECURE="true"
+$env:ADMIN_USERNAME="admin"
+$env:ADMIN_PASSWORD="replace-with-a-strong-admin-password"
 $env:CHECK_HOUR="8"
 $env:CHECK_MINUTE="0"
 $env:TIMEZONE="Asia/Shanghai"
@@ -113,14 +116,11 @@ python run.py
 http://127.0.0.1:5000
 ```
 
-首次启动会自动创建数据库表。如果没有管理员账号，会创建默认管理员：
+首次启动会自动创建数据库表。如果没有管理员账号，应用会使用
+`ADMIN_USERNAME` 和 `ADMIN_PASSWORD` 创建管理员。生产或共享部署前必须设置强密码。
 
-```text
-用户名：admin
-密码：admin123
-```
-
-上线或共享前请务必修改默认管理员密码，或删除默认管理员后重新创建。
+仅本地开发时，可以设置 `ALLOW_DEFAULT_ADMIN=true` 来创建默认管理员
+`admin / admin123`。不要在公网环境启用这个选项。
 
 ## 使用流程
 
@@ -180,6 +180,9 @@ http://127.0.0.1:5000
 
 - 设置强随机 `SECRET_KEY`
 - 固定并备份 `FERNET_KEY`
+- 设置 `ADMIN_USERNAME` 和强随机 `ADMIN_PASSWORD`
+- HTTPS 部署时设置 `SESSION_COOKIE_SECURE=true`
+- 仅在确实需要推送到内网服务时设置 `ALLOW_PRIVATE_WEBHOOKS=true`
 - 关闭 Flask debug
 - 使用 HTTPS
 - 限制管理后台访问范围
@@ -214,12 +217,15 @@ http://127.0.0.1:5000
 ```text
 SECRET_KEY
 FERNET_KEY
+SESSION_COOKIE_SECURE
+ADMIN_USERNAME
+ADMIN_PASSWORD
 CHECK_HOUR
 CHECK_MINUTE
 TIMEZONE
 ```
 
-不要在公网环境使用默认管理员密码或 Flask debug 模式。
+不要在公网环境启用 `ALLOW_DEFAULT_ADMIN` 或 Flask debug 模式。
 
 ## 免责声明
 

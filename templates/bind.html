@@ -76,6 +76,7 @@
             </div>
             <form action="{{ url_for('unbind_riot') }}" method="POST" data-confirm="{{ _('bind_confirm_unbind') }}"
                 onsubmit="return confirm(this.dataset.confirm)">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm">{{ _('bind_unbind') }}</button>
             </form>
         </div>
@@ -87,6 +88,7 @@
                 <p>{{ _('bind_region_help') }}</p>
             </div>
             <form method="POST" action="{{ url_for('bind_url') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <textarea class="form-control bind-token-input" name="access_url" rows="5" required
                         placeholder="https://playvalorant.com/opt_in#access_token=..."></textarea>

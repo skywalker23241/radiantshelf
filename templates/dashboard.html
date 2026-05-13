@@ -111,6 +111,7 @@
 </div>
 
 <form action="{{ url_for('my_store_refresh') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn btn-outline-primary btn-sm">
         <i class="bi bi-arrow-clockwise me-1"></i>{{ _('dash_refresh') }}
     </button>
@@ -122,6 +123,7 @@
     <div class="empty-icon"><i class="bi bi-shop-window"></i></div>
     <h3>{{ _('dash_no_data') }}</h3>
     <form action="{{ url_for('my_store_refresh') }}" method="POST" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary">
             <i class="bi bi-cloud-download me-1"></i>{{ _('dash_fetch_btn') }}
         </button>
