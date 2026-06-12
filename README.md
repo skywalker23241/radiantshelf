@@ -1,4 +1,4 @@
-# Valorant Daily Store
+# RadiantShelf
 
 一个基于 Flask 的 Valorant 每日商店查看与推送工具。用户注册后可以通过 Riot 官方登录页面获取短期 Access URL，绑定账号并查看当天商店；管理员可以维护 Webhook、手动检查用户商店、刷新皮肤缓存。
 
@@ -7,36 +7,33 @@
 - 用户注册、登录、退出
 - Riot 账号 URL Token 绑定，无需在本站输入 Riot 密码
 - 获取并展示每日商店 4 个皮肤报价
+- 翻牌式商店卡片展示，支持一键 Reveal All
 - 皮肤图库搜索、收藏和多语言名称展示
 - 每日定时检查商店，支持全局 Webhook 推送
-- 管理后台：用户管理、Webhook 管理、手动检查、皮肤缓存刷新
+- 管理后台：概览面板、用户管理、Webhook 管理、手动检查、皮肤缓存刷新
 - 多语言界面：中文、英文、日文、韩文、葡萄牙文、西班牙文、土耳其文、俄文
 
 ## 界面截图
-
-### 首页
-
-![首页](screenshots/homepage.png)
 
 ### 登录页
 
 ![登录页](screenshots/login-page.png)
 
+### 我的商店
+
+![我的商店](screenshots/dashboard-page.png)
+
 ### Riot 账号绑定页
 
 ![Riot 账号绑定页](screenshots/bind-page.png)
 
-### 我的商店页
+### 管理面板
 
-![我的商店页](screenshots/skin-page.png)
+![管理面板](screenshots/admin-panel-page.png)
 
-### 收藏页
+### 系统设置 / Webhook
 
-![收藏页](screenshots/fav-page.png)
-
-### Webhook 管理页
-
-![Webhook 管理页](screenshots/webhook-page.png)
+![系统设置 / Webhook](screenshots/admin-settings-page.png)
 
 ## 技术栈
 
