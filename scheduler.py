@@ -26,6 +26,18 @@ def init_scheduler(app):
             from skin_cache import refresh_skin_cache
             refresh_skin_cache()
 
+    def rebind_reminder():
+        with app.app_context():
+            from webhook import send_rebind_reminders
+
+            result = send_rebind_reminders()
+            if result["attempted"]:
+                logger.info(
+                    "重新绑定提醒完成: %s 成功, %s 失败",
+                    result["success"],
+                    result["failed"],
+                )
+
     _scheduler.add_job(
         daily_check,
         CronTrigger(
@@ -39,6 +51,14 @@ def init_scheduler(app):
     )
 
     _scheduler.add_job(
+        rebind_reminder,
+        CronTrigger(minute="*", timezone=Config.TIMEZONE),
+        id="daily_rebind_reminder",
+        name="Riot 重新绑定提醒",
+        replace_existing=True,
+    )
+
+    _scheduler.add_job(
         weekly_skin_refresh,
         CronTrigger(day_of_week="mon", hour=4, minute=0, timezone=Config.TIMEZONE),
         id="weekly_skin_refresh",
@@ -47,7 +67,11 @@ def init_scheduler(app):
     )
 
     _scheduler.start()
-    logger.info(f"定时任务已启动: 每天 {Config.CHECK_HOUR}:{Config.CHECK_MINUTE:02d} 检查商店")
+    logger.info(
+        "定时任务已启动: 每天 %s:%02d 检查商店，按用户时区发送重新绑定提醒",
+        Config.CHECK_HOUR,
+        Config.CHECK_MINUTE,
+    )
     return _scheduler
 
 

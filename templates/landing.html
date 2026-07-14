@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ _('site_name') }} · 每日商店追踪{% endblock %}
+{% block main_class %}landing-main{% endblock %}
+
+{% block content %}
+<section class="landing-hero">
+    <div class="container landing-hero-grid">
+        <div class="landing-hero-copy">
+            <div class="landing-eyebrow"><span></span> VALORANT · DAILY INTEL</div>
+            {% if current_lang == 'zh' %}
+            <h1>把每日商店，<em>留给期待。</em></h1>
+            <p class="landing-lead">RadiantShelf 帮你追踪每日皮肤与每周配件商店、收藏心仪皮肤，并在更新时通过 Webhook 安静通知你。</p>
+            {% else %}
+            <h1>Let your daily store <em>find you.</em></h1>
+            <p class="landing-lead">RadiantShelf tracks daily skins and weekly accessories, keeps favorites close, and sends a quiet webhook when the store refreshes.</p>
+            {% endif %}
+            <div class="landing-actions">
+                <a class="btn btn-primary landing-primary" href="{{ url_for('register') }}">
+                    {% if current_lang == 'zh' %}开始追踪{% else %}Start tracking{% endif %}<i class="bi bi-arrow-up-right"></i>
+                </a>
+                <a class="landing-secondary-link" href="#how-it-works">
+                    <i class="bi bi-play-circle"></i>{% if current_lang == 'zh' %}了解工作方式{% else %}How it works{% endif %}
+                </a>
+            </div>
+            <div class="landing-trust-row">
+                <div><i class="bi bi-shield-check"></i>{% if current_lang == 'zh' %}不保存 Riot 密码{% else %}No Riot password stored{% endif %}</div>
+                <div><i class="bi bi-globe2"></i>{% if current_lang == 'zh' %}支持多地区与多语言{% else %}Regions & languages supported{% endif %}</div>
+            </div>
+        </div>
+
+        <div class="landing-showcase" aria-label="Daily store preview">
+            <div class="showcase-orbit orbit-one"></div><div class="showcase-orbit orbit-two"></div>
+            <div class="showcase-window">
+                <div class="showcase-topbar">
+                    <span class="showcase-brand"><img src="{{ url_for('static', filename='images/site-logo.png') }}" alt=""> RADIANTSHELF</span>
+                    <span class="showcase-live"><b></b>{% if current_lang == 'zh' %}今日已更新{% else %}LIVE TODAY{% endif %}</span>
+                </div>
+                <div class="showcase-header">
+                    <div><small>{% if current_lang == 'zh' %}你的每日商店{% else %}YOUR DAILY STORE{% endif %}</small><strong>{% if current_lang == 'zh' %}今天，有什么惊喜？{% else %}What is waiting today?{% endif %}</strong></div>
+                    <button type="button" aria-label="Favorites"><i class="bi bi-heart"></i></button>
+                </div>
+                <div class="showcase-cards">
+                    <article class="showcase-card cyan"><i class="bi bi-crosshair2"></i><span>SPECTRUM</span><small>1,275 VP</small></article>
+                    <article class="showcase-card violet"><i class="bi bi-lightning-charge"></i><span>REAVER</span><small>1,775 VP</small></article>
+                    <article class="showcase-card gold"><i class="bi bi-stars"></i><span>PRIME</span><small>1,775 VP</small></article>
+                    <article class="showcase-card red"><i class="bi bi-fire"></i><span>ONI</span><small>1,775 VP</small></article>
+                </div>
+                <div class="showcase-footer"><span><i class="bi bi-clock-history"></i>{% if current_lang == 'zh' %}明日 08:00 刷新{% else %}Refreshes tomorrow, 08:00{% endif %}</span><span>4 / 4</span></div>
+            </div>
+            <div class="showcase-note note-favorite"><i class="bi bi-heart-fill"></i>{% if current_lang == 'zh' %} 已命中收藏{% else %} Favorite found{% endif %}</div>
+            <div class="showcase-note note-secure"><i class="bi bi-shield-lock"></i>{% if current_lang == 'zh' %} 安全授权{% else %} Secure auth{% endif %}</div>
+        </div>
+    </div>
+</section>
+
+<section class="landing-proof">
+    <div class="container landing-proof-inner">
+        <p>{% if current_lang == 'zh' %}为想要掌握每一次轮换的玩家而设计{% else %}Built for players who want every rotation in view{% endif %}</p>
+        <div class="proof-items"><span><i class="bi bi-bag-check"></i>{% if current_lang == 'zh' %}每日皮肤{% else %}Daily skins{% endif %}</span><span><i class="bi bi-calendar2-week"></i>{% if current_lang == 'zh' %}每周配件{% else %}Weekly accessories{% endif %}</span><span><i class="bi bi-bookmark-star"></i>{% if current_lang == 'zh' %}皮肤收藏{% else %}Skin favorites{% endif %}</span><span><i class="bi bi-bell"></i> Webhook</span><span><i class="bi bi-translate"></i>{% if current_lang == 'zh' %}多语言{% else %}Multi-language{% endif %}</span></div>
+    </div>
+</section>
+
+<section class="landing-section landing-features" id="features">
+    <div class="container">
+        <div class="landing-section-heading">
+            <div><span class="landing-kicker">01 / PRODUCT</span><h2>{% if current_lang == 'zh' %}你的商店，不该靠运气遇见。{% else %}Your store should not be a lucky encounter.{% endif %}</h2></div>
+            <p>{% if current_lang == 'zh' %}从每日皮肤到每周配件和心愿提醒，把每一次轮换都交给 RadiantShelf。{% else %}From daily skins to weekly accessories and wish-list alerts, let RadiantShelf keep every rotation in view.{% endif %}</p>
+        </div>
+        <div class="landing-feature-grid">
+            <article class="landing-feature-card feature-primary"><div class="feature-icon"><i class="bi bi-grid-1x2"></i></div><h3>{% if current_lang == 'zh' %}每天，一眼看完{% else %}See it in one glance{% endif %}</h3><p>{% if current_lang == 'zh' %}清晰呈现当天的四个皮肤报价，打开即可查看。{% else %}Your four daily skin offers, clearly presented when you open the app.{% endif %}</p><div class="feature-lines"><span></span><span></span><span></span></div></article>
+            <article class="landing-feature-card"><div class="feature-icon"><i class="bi bi-heart"></i></div><h3>{% if current_lang == 'zh' %}先收藏，再等待{% else %}Favorite, then wait{% endif %}</h3><p>{% if current_lang == 'zh' %}建立自己的心愿清单，皮肤出现时不再错过。{% else %}Build a personal wish list, so the right skin never slips by unnoticed.{% endif %}</p><span class="feature-index">02</span></article>
+            <article class="landing-feature-card"><div class="feature-icon"><i class="bi bi-send"></i></div><h3>{% if current_lang == 'zh' %}推送到你想去的地方{% else %}Send updates where you want{% endif %}</h3><p>{% if current_lang == 'zh' %}配置 Webhook，让每日更新直接抵达你的自动化工作流。{% else %}Configure webhooks to send each update right into your automation flow.{% endif %}</p><span class="feature-index">03</span></article>
+            <article class="landing-feature-card feature-weekly"><div class="feature-icon"><i class="bi bi-calendar2-week"></i></div><h3>{% if current_lang == 'zh' %}每周配件，也不会错过{% else %}Weekly accessories, covered{% endif %}</h3><p>{% if current_lang == 'zh' %}同步展示挂饰、玩家卡、喷漆与称号，并准确显示距离下次轮换的时间。{% else %}See buddies, cards, sprays, and titles with an accurate countdown to the next rotation.{% endif %}</p><span class="feature-index">04</span></article>
+        </div>
+    </div>
+</section>
+
+<section class="landing-section landing-process" id="how-it-works">
+    <div class="container landing-process-grid">
+        <div class="landing-process-copy"><span class="landing-kicker">02 / SETUP</span><h2>{% if current_lang == 'zh' %}一分钟连接，<br>每天放心查看。{% else %}Connect once.<br>Check with confidence.{% endif %}</h2><p>{% if current_lang == 'zh' %}授权始终在 Riot 官方页面进行。我们只使用短期 Access URL 获取商店信息，不会要求或保存你的 Riot 密码。{% else %}Authorization always happens on Riot's official page. We only use a short-lived Access URL to retrieve store data—never your Riot password.{% endif %}</p><a href="{{ url_for('register') }}" class="landing-text-link">{% if current_lang == 'zh' %}创建账号并开始{% else %}Create an account{% endif %} <i class="bi bi-arrow-right"></i></a></div>
+        <ol class="landing-steps">
+            <li><span>01</span><div><h3>{% if current_lang == 'zh' %}创建 RadiantShelf 账号{% else %}Create your RadiantShelf account{% endif %}</h3><p>{% if current_lang == 'zh' %}用几秒完成注册，准备好你的私人商店面板。{% else %}Register in seconds and get your personal store dashboard ready.{% endif %}</p></div><i class="bi bi-arrow-down-right"></i></li>
+            <li><span>02</span><div><h3>{% if current_lang == 'zh' %}通过 Riot 官方页完成授权{% else %}Authorize through Riot's official page{% endif %}</h3><p>{% if current_lang == 'zh' %}复制短期 Access URL 并粘贴即可关联账号。{% else %}Copy the short-lived Access URL and paste it to link your account.{% endif %}</p></div><i class="bi bi-arrow-down-right"></i></li>
+            <li><span>03</span><div><h3>{% if current_lang == 'zh' %}追踪、收藏并接收通知{% else %}Track, favorite, and get notified{% endif %}</h3><p>{% if current_lang == 'zh' %}每日商店和心愿皮肤，从此都有迹可循。{% else %}Your daily store and wish-list skins now have a place to be seen.{% endif %}</p></div><i class="bi bi-check2"></i></li>
+        </ol>
+    </div>
+</section>
+
+<section class="landing-cta">
+    <div class="container"><div class="landing-cta-panel"><div><span class="landing-kicker">RADIANTSHELF / READY</span><h2>{% if current_lang == 'zh' %}下一次刷新，别再错过。{% else %}Do not miss the next refresh.{% endif %}</h2><p>{% if current_lang == 'zh' %}注册后即可连接 Riot 账号，开始追踪你的每日商店。{% else %}Create an account, link Riot, and start tracking your daily store.{% endif %}</p></div><a class="btn btn-primary landing-primary" href="{{ url_for('register') }}">{% if current_lang == 'zh' %}免费开始{% else %}Get started free{% endif %}<i class="bi bi-arrow-up-right"></i></a></div><p class="landing-disclaimer">{% if current_lang == 'zh' %}RadiantShelf 是独立的个人工具，与 Riot Games 不存在隶属或认可关系。{% else %}RadiantShelf is an independent personal tool, not affiliated with or endorsed by Riot Games.{% endif %}</p></div>
+</section>
+{% endblock %}

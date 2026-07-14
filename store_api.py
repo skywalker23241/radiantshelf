@@ -2,14 +2,15 @@ import base64
 import json
 import logging
 import time
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, cast
 
 import requests
 from requests import Response
 
 from config import REGION_TO_SHARD
-from models import Favorite, StoreOffer, User, db
+from accessory_cache import get_accessory_metadata
+from models import AccessoryOffer, Favorite, StoreOffer, User, db
 from riot_auth import AuthenticationError, RateLimitError, RiotAuth
 from skin_cache import get_skin
 
@@ -110,6 +111,7 @@ def _ordered_shards(primary: str, detected: Optional[str] = None) -> List[str]:
 
 
 VP_CURRENCY_UUID = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741"
+KINGDOM_CREDITS_UUID = "85ca954a-41f2-ce94-9b45-8ca3dd39a00d"
 
 
 def parse_daily_offers(storefront_data: Dict[str, Any]) -> List[str]:
@@ -160,6 +162,69 @@ def parse_offers_remaining_seconds(storefront_data: Dict[str, Any]) -> int:
         return remaining
     if isinstance(remaining, float):
         return int(remaining)
+    return 0
+
+
+def parse_accessory_offers(storefront_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Extract the four weekly accessory offers from a Storefront response."""
+    accessory_store = storefront_data.get("AccessoryStore")
+    if not isinstance(accessory_store, dict):
+        return []
+    raw_offers = accessory_store.get("AccessoryStoreOffers")
+    if not isinstance(raw_offers, list):
+        return []
+
+    storefront_id = accessory_store.get("StorefrontID")
+    parsed: List[Dict[str, Any]] = []
+    for wrapper in raw_offers:
+        if not isinstance(wrapper, dict):
+            continue
+        offer = wrapper.get("Offer")
+        if not isinstance(offer, dict):
+            continue
+        offer_id = offer.get("OfferID")
+        rewards = offer.get("Rewards")
+        if not isinstance(offer_id, str) or not isinstance(rewards, list):
+            continue
+        reward = next((r for r in rewards if isinstance(r, dict)), None)
+        if not reward:
+            continue
+        item_uuid = reward.get("ItemID")
+        item_type_uuid = reward.get("ItemTypeID")
+        if not isinstance(item_uuid, str) or not isinstance(item_type_uuid, str):
+            continue
+
+        cost_map = offer.get("Cost")
+        cost: Optional[int] = None
+        currency_uuid: Optional[str] = None
+        if isinstance(cost_map, dict) and cost_map:
+            raw_cost = cost_map.get(KINGDOM_CREDITS_UUID)
+            currency_uuid = KINGDOM_CREDITS_UUID if raw_cost is not None else None
+            if raw_cost is None:
+                currency_uuid, raw_cost = next(iter(cost_map.items()))
+            if isinstance(raw_cost, (int, float)):
+                cost = int(raw_cost)
+
+        parsed.append(
+            {
+                "offer_id": offer_id,
+                "item_uuid": item_uuid,
+                "item_type_uuid": item_type_uuid,
+                "cost": cost,
+                "currency_uuid": currency_uuid,
+                "storefront_id": storefront_id if isinstance(storefront_id, str) else None,
+            }
+        )
+    return parsed
+
+
+def parse_accessory_remaining_seconds(storefront_data: Dict[str, Any]) -> int:
+    accessory_store = storefront_data.get("AccessoryStore")
+    if not isinstance(accessory_store, dict):
+        return 0
+    remaining = accessory_store.get("AccessoryStoreRemainingDurationInSeconds", 0)
+    if isinstance(remaining, (int, float)):
+        return max(0, int(remaining))
     return 0
 
 
@@ -264,6 +329,8 @@ def get_user_store(
     skin_uuids = parse_daily_offers(storefront)
     offer_prices = parse_daily_offer_prices(storefront)
     remaining = parse_offers_remaining_seconds(storefront)
+    raw_accessory_offers = parse_accessory_offers(storefront)
+    accessory_remaining = parse_accessory_remaining_seconds(storefront)
 
     offers: List[Dict[str, Any]] = []
     today = date.today()
@@ -272,6 +339,7 @@ def get_user_store(
     user_id = int(user.id)
 
     StoreOffer.query.filter_by(user_id=user_id, offer_date=today).delete()
+    AccessoryOffer.query.filter_by(user_id=user_id).delete()
 
     for skin_uuid in skin_uuids:
         skin = get_skin(skin_uuid)
@@ -309,6 +377,40 @@ def get_user_store(
             }
         )
 
+    accessory_offers: List[Dict[str, Any]] = []
+    expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+        seconds=accessory_remaining
+    )
+    for raw_offer in raw_accessory_offers:
+        metadata = get_accessory_metadata(
+            raw_offer["item_type_uuid"], raw_offer["item_uuid"]
+        )
+        accessory = AccessoryOffer()
+        accessory.user_id = user_id
+        accessory.offer_id = raw_offer["offer_id"]
+        accessory.item_uuid = raw_offer["item_uuid"]
+        accessory.item_type_uuid = raw_offer["item_type_uuid"]
+        accessory.item_type = metadata["item_type"]
+        accessory.name = metadata["name"]
+        accessory.icon_url = metadata["icon_url"]
+        accessory.cost = raw_offer["cost"]
+        accessory.currency_uuid = raw_offer["currency_uuid"]
+        accessory.storefront_id = raw_offer["storefront_id"]
+        accessory.expires_at = expires_at
+        db.session.add(accessory)
+
+        accessory_offers.append(
+            {
+                "uuid": raw_offer["item_uuid"],
+                "offer_id": raw_offer["offer_id"],
+                "item_type": metadata["item_type"],
+                "name": metadata["name"],
+                "icon_url": metadata["icon_url"],
+                "cost": raw_offer["cost"],
+                "currency_uuid": raw_offer["currency_uuid"],
+            }
+        )
+
     db.session.commit()
 
     fav_uuids = {f.skin_uuid for f in Favorite.query.filter_by(user_id=user_id).all()}
@@ -318,5 +420,7 @@ def get_user_store(
         "offers": offers,
         "favorites_matched": favorites_matched,
         "remaining_seconds": remaining,
+        "accessory_offers": accessory_offers,
+        "accessory_remaining_seconds": accessory_remaining,
         "error": None,
     }

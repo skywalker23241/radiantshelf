@@ -2,7 +2,7 @@
 {% block title %}{{ _('fav_title') }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header favorites-header">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2">
         <div>
             <h1>{{ _('fav_heading') }}</h1>
@@ -14,14 +14,49 @@
     </div>
 </div>
 
-<div class="separator"></div>
+<section class="favorite-webhook-panel">
+    <div class="favorite-webhook-copy">
+        <span class="section-kicker">DISCORD</span>
+        <h2>{{ _('webhook_personal_title') }}</h2>
+        <p>{{ _('webhook_personal_desc') }}</p>
+    </div>
+    <form method="POST" action="{{ url_for('my_webhook_save') }}" class="favorite-webhook-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="personal-webhook-url" class="visually-hidden">Discord Webhook URL</label>
+        <input id="personal-webhook-url" type="url" class="form-control" name="webhook_url"
+               value="{{ current_user.webhook_url or '' }}" placeholder="https://discord.com/api/webhooks/...">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check2-circle"></i>{{ _('webhook_save') }}
+        </button>
+    </form>
+    <div class="favorite-webhook-actions">
+        <span class="webhook-status {% if current_user.webhook_url %}is-on{% endif %}">
+            <i class="bi bi-circle-fill"></i>
+            {% if current_user.webhook_url %}{{ _('webhook_enabled') }}{% else %}{{ _('webhook_disabled') }}{% endif %}
+        </span>
+        {% if current_user.webhook_url %}
+        <form method="POST" action="{{ url_for('my_webhook_test') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-info btn-sm"><i class="bi bi-send"></i>{{ _('webhook_test') }}</button>
+        </form>
+        <form method="POST" action="{{ url_for('my_webhook_save') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="webhook_url" value="">
+            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-bell-slash"></i>{{ _('webhook_disable') }}</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
 
 {% if favorites %}
-<div class="row g-3">
+<div class="row g-3 favorites-grid">
     {% for fav in favorites %}
     <div class="col-6 col-md-4 col-lg-3">
-        <div class="card skin-card h-100">
+        <div class="card skin-card catalog-skin-card h-100 {% if fav.skin_uuid in current_offer_uuids %}is-favorite-match{% endif %}">
             <div class="skin-img-wrap position-relative">
+                {% if fav.skin_uuid in current_offer_uuids %}
+                <span class="favorite-store-badge"><i class="bi bi-bag-check-fill"></i>{{ _('fav_in_store') }}</span>
+                {% endif %}
                 {% if fav.skin and fav.skin.icon_url %}
                 <img src="{{ fav.skin.icon_url }}" class="skin-img" alt="{{ fav.skin.name }}" loading="lazy">
                 {% else %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ _('settings_title') }}{% endblock %}
+
+{% block content %}
+<div class="page-header bind-page-header">
+    <h1>{{ _('settings_heading') }}</h1>
+    <p>{{ _('settings_desc') }}</p>
+</div>
+
+<section class="card bind-form-card p-4 mx-auto" style="max-width: 38rem;">
+    <form method="POST" action="{{ url_for('user_settings') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-4">
+            <label for="notification-language" class="form-label">{{ _('settings_notification_language') }}</label>
+            <select id="notification-language" name="notification_language" class="form-select">
+                {% for lang in supported_langs %}
+                <option value="{{ lang }}" {% if user.notification_language == lang %}selected{% endif %}>
+                    {{ lang_names[lang] }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="form-text">{{ _('settings_notification_language_help') }}</div>
+        </div>
+        <div class="mb-4">
+            <label for="notification-timezone" class="form-label">{{ _('settings_notification_timezone') }}</label>
+            <select id="notification-timezone" name="notification_timezone" class="form-select">
+                {% for timezone in notification_timezones %}
+                <option value="{{ timezone }}" {% if user.notification_timezone == timezone %}selected{% endif %}>
+                    {{ timezone }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="form-check mt-2">
+                <input id="notification-timezone-auto" class="form-check-input" type="checkbox"
+                       name="notification_timezone_auto" value="1" {% if user.notification_timezone_auto %}checked{% endif %}>
+                <label for="notification-timezone-auto" class="form-check-label">{{ _('settings_timezone_auto') }}</label>
+            </div>
+            <div class="form-text">{{ _('settings_timezone_auto_help') }}</div>
+        </div>
+        <div class="mb-4">
+            <label for="notification-reminder-time" class="form-label">{{ _('settings_reminder_time') }}</label>
+            <input id="notification-reminder-time" type="time" name="notification_reminder_time"
+                   class="form-control" value="{{ user.notification_reminder_time }}" required>
+            <div class="form-text">{{ _('settings_reminder_time_help') }}</div>
+        </div>
+        <button type="submit" class="btn btn-primary">{{ _('settings_save') }}</button>
+    </form>
+</section>
+{% endblock %}

@@ -50,6 +50,20 @@ REGIONS = [
     ("ru", "俄罗斯 (RU)"),
 ]
 
+# Riot's shard codes cover broad areas, so these are sensible defaults rather
+# than a substitute for a user's precise location preference.
+REGION_TIMEZONES = {
+    "na": "America/Los_Angeles",
+    "pbe": "America/Los_Angeles",
+    "eu": "Europe/Berlin",
+    "ap": "Asia/Shanghai",
+    "kr": "Asia/Seoul",
+    "br": "America/Sao_Paulo",
+    "latam": "America/Mexico_City",
+    "tr": "Europe/Istanbul",
+    "ru": "Europe/Moscow",
+}
+
 _fernet_instance = None
 
 

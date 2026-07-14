@@ -87,6 +87,8 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('bind_riot') }}"><i
                                         class="bi bi-link-45deg me-2"></i>{{ _('nav_bind_riot') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('user_settings') }}"><i
+                                        class="bi bi-gear me-2"></i>{{ _('nav_settings') }}</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -96,7 +98,7 @@
                     </li>
                 </ul>
                 {% else %}
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{{
                             lang_names[current_lang] }}</a>
@@ -107,13 +109,19 @@
                             {% endfor %}
                         </ul>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">{{ _('login_submit') }}</a>
+                    </li>
+                    <li class="nav-item ms-lg-1">
+                        <a class="btn btn-primary btn-sm nav-cta" href="{{ url_for('register') }}">{{ _('register_submit') }}</a>
+                    </li>
                 </ul>
                 {% endif %}
             </div>
         </div>
     </nav>
 
-    <main class="container py-4 app-main">
+    <main class="{% block main_class %}container py-4 app-main{% endblock %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div class="mb-4">

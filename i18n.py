@@ -38,7 +38,12 @@ def get_locale() -> str:
 
 
 def translate(key: str, **kwargs: Any) -> str:
-    lang = get_locale()
+    return translate_for_locale(get_locale(), key, **kwargs)
+
+
+def translate_for_locale(lang: str, key: str, **kwargs: Any) -> str:
+    if lang not in SUPPORTED_LANGS:
+        lang = DEFAULT_LANG
     text = _translations.get(lang, {}).get(key)
     if text is None:
         text = _translations.get(DEFAULT_LANG, {}).get(key, key)
@@ -52,7 +57,13 @@ def translate(key: str, **kwargs: Any) -> str:
 
 def localized_skin_name(skin) -> str:
     """根据当前语言返回皮肤名称"""
-    lang = get_locale()
+    return localized_skin_name_for_locale(skin, get_locale())
+
+
+def localized_skin_name_for_locale(skin, lang: str) -> str:
+    """Return a skin name in an explicit locale for background jobs."""
+    if lang not in SUPPORTED_LANGS:
+        lang = DEFAULT_LANG
     if lang != DEFAULT_LANG and skin.name_i18n:
         try:
             names = json.loads(skin.name_i18n)

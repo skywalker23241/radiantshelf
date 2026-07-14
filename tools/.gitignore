@@ -1,0 +1,4 @@
+*.har
+*.har.json
+*.sanitized.json
+captures/

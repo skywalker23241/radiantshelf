@@ -29,6 +29,15 @@ class User(UserMixin, db.Model):
     puuid = db.Column(db.String(100), nullable=True)
 
     webhook_url = db.Column(db.String(500), nullable=True)
+    notification_language = db.Column(db.String(10), nullable=False, default="zh")
+    notification_timezone = db.Column(
+        db.String(64), nullable=False, default="Asia/Shanghai"
+    )
+    notification_timezone_auto = db.Column(db.Boolean, nullable=False, default=True)
+    notification_reminder_time = db.Column(
+        db.String(5), nullable=False, default="08:00"
+    )
+    last_rebind_reminder_date = db.Column(db.Date, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     favorites = db.relationship(
@@ -36,6 +45,9 @@ class User(UserMixin, db.Model):
     )
     store_offers = db.relationship(
         "StoreOffer", backref="user", cascade="all, delete-orphan"
+    )
+    accessory_offers = db.relationship(
+        "AccessoryOffer", backref="user", cascade="all, delete-orphan"
     )
 
     def set_login_password(self, plaintext: str):
@@ -147,6 +159,36 @@ class StoreOffer(db.Model):
     skin = db.relationship("Skin")
 
     __table_args__ = (db.UniqueConstraint("user_id", "skin_uuid", "offer_date"),)
+
+
+class AccessoryOffer(db.Model):
+    """当前每周配件商店快照。
+
+    配件可能是挂饰、玩家卡、喷漆或称号，不能关联到 Skin 表，因此在
+    抓取时保存展示所需的最小元数据。
+    """
+
+    __tablename__ = "accessory_offers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    offer_id = db.Column(db.String(36), nullable=False)
+    item_uuid = db.Column(db.String(36), nullable=False)
+    item_type_uuid = db.Column(db.String(36), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False, default="unknown")
+    name = db.Column(db.String(200), nullable=False, default="未知配件")
+    icon_url = db.Column(db.String(500), nullable=True)
+    cost = db.Column(db.Integer, nullable=True)
+    currency_uuid = db.Column(db.String(36), nullable=True)
+    storefront_id = db.Column(db.String(100), nullable=True)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "offer_id", name="uq_accessory_user_offer"),
+    )
 
 
 class WebhookConfig(db.Model):

@@ -2,11 +2,11 @@
 {% block title %}{{ _('skins_title') }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header catalog-header">
     <h1>{{ _('skins_heading') }}</h1>
 </div>
 
-<form method="GET" action="{{ url_for('skins_list') }}" class="search-shell">
+<form method="GET" action="{{ url_for('skins_list') }}" class="search-shell catalog-search">
     <div class="flex-grow-1 position-relative">
         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3" style="color: hsl(var(--muted-foreground));"></i>
         <input type="text" class="form-control" style="padding-left: 2.25rem;" name="q" value="{{ query }}"
@@ -19,7 +19,7 @@
 <div class="row g-3">
     {% for skin in skins %}
     <div class="col-6 col-md-4 col-lg-3 col-xl-2">
-        <div class="card skin-card h-100" id="skin-{{ skin.uuid }}">
+        <div class="card skin-card catalog-skin-card h-100" id="skin-{{ skin.uuid }}">
             <div class="skin-img-wrap-sm">
                 {% if skin.icon_url %}
                 <img src="{{ skin.icon_url }}" class="skin-img" alt="{{ skin.name }}" loading="lazy">
@@ -94,6 +94,7 @@
         const span = btn.querySelector('span');
         const favText = btn.dataset.favText;
         const unfavText = btn.dataset.unfavText;
+        const matchMessage = {{ _('flash_favorite_already_in_store') | tojson }};
 
         fetch('/my/favorites/toggle', {
             method: 'POST',
@@ -110,6 +111,7 @@
                     icon.className = 'bi bi-star-fill me-1';
                     icon.style.fontSize = '0.65rem';
                     span.textContent = favText;
+                    if (data.matched_now) alert(matchMessage);
                 } else {
                     btn.className = 'btn btn-sm w-100 fav-btn btn-outline-secondary';
                     icon.className = 'bi bi-star me-1';

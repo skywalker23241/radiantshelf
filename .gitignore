@@ -22,3 +22,5 @@ fernet.key
 .mypy_cache/
 .ruff_cache/
 .DS_Store
+.aidesigner/*
+!.aidesigner/.gitkeep

@@ -2,6 +2,7 @@ import logging
 from datetime import date, datetime
 from functools import wraps
 from typing import Optional, cast
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 import requests
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
@@ -13,10 +14,11 @@ from flask_login import (
     logout_user,
 )
 
-from config import REGIONS, Config
-from i18n import init_i18n
+from config import REGION_TIMEZONES, REGIONS, Config
+from accessory_cache import get_accessory_metadata
+from i18n import SUPPORTED_LANGS, init_i18n
 from i18n import translate as _
-from models import Favorite, Skin, StoreOffer, User, WebhookConfig, db
+from models import AccessoryOffer, Favorite, Skin, StoreOffer, User, WebhookConfig, db
 from riot_auth import AuthenticationError, RiotAuth
 from security import (
     get_csrf_token,
@@ -105,12 +107,50 @@ def create_app() -> Flask:
 
         inspector = sa_inspect(db.engine)
         skin_cols = [c["name"] for c in inspector.get_columns("skins")]
+        user_cols = [c["name"] for c in inspector.get_columns("users")]
         if "name_i18n" not in skin_cols:
             db.session.execute(text("ALTER TABLE skins ADD COLUMN name_i18n TEXT"))
             db.session.commit()
         if "is_melee" not in skin_cols:
             db.session.execute(
                 text("ALTER TABLE skins ADD COLUMN is_melee BOOLEAN DEFAULT 0")
+            )
+            db.session.commit()
+        if "notification_language" not in user_cols:
+            db.session.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN notification_language "
+                    "VARCHAR(10) NOT NULL DEFAULT 'zh'"
+                )
+            )
+            db.session.commit()
+        if "notification_timezone" not in user_cols:
+            db.session.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN notification_timezone "
+                    "VARCHAR(64) NOT NULL DEFAULT 'Asia/Shanghai'"
+                )
+            )
+            db.session.commit()
+        if "notification_timezone_auto" not in user_cols:
+            db.session.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN notification_timezone_auto "
+                    "BOOLEAN NOT NULL DEFAULT 1"
+                )
+            )
+            db.session.commit()
+        if "notification_reminder_time" not in user_cols:
+            db.session.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN notification_reminder_time "
+                    "VARCHAR(5) NOT NULL DEFAULT '08:00'"
+                )
+            )
+            db.session.commit()
+        if "last_rebind_reminder_date" not in user_cols:
+            db.session.execute(
+                text("ALTER TABLE users ADD COLUMN last_rebind_reminder_date DATE")
             )
             db.session.commit()
 
@@ -153,7 +193,7 @@ def create_app() -> Flask:
     def index():
         if current_user.is_authenticated:
             return redirect(url_for("dashboard"))
-        return redirect(url_for("login"))
+        return render_template("landing.html")
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
@@ -227,6 +267,9 @@ def create_app() -> Flask:
         user_id = _current_user_id()
         today = date.today()
         offers = []
+        accessory_offers = []
+        accessory_expires_at = None
+        favorite_matches = []
         fav_uuids = set()
         if user.riot_bound:
             offers_db = StoreOffer.query.filter_by(
@@ -248,9 +291,43 @@ def create_app() -> Flask:
                         "is_favorite": o.skin_uuid in fav_uuids,
                     }
                 )
+            favorite_matches = [offer for offer in offers if offer["is_favorite"]]
+            accessory_rows = AccessoryOffer.query.filter_by(user_id=user_id).order_by(
+                AccessoryOffer.id
+            ).all()
+            for accessory in accessory_rows:
+                item_type = accessory.item_type
+                name = accessory.name
+                icon_url = accessory.icon_url
+                # 兼容旧缓存或元数据服务曾经未命中的记录；只修正本次展示，
+                # 下一次刷新商店时会用最新元数据覆盖数据库中的旧值。
+                if item_type == "unknown" or not icon_url:
+                    metadata = get_accessory_metadata(
+                        accessory.item_type_uuid, accessory.item_uuid
+                    )
+                    item_type = metadata.get("item_type") or item_type
+                    name = metadata.get("name") or name
+                    icon_url = metadata.get("icon_url") or icon_url
+                accessory_offers.append(
+                    {
+                        "uuid": accessory.item_uuid,
+                        "item_type": item_type,
+                        "name": name,
+                        "icon_url": icon_url,
+                        "cost": accessory.cost,
+                    }
+                )
+            if accessory_rows:
+                accessory_expires_at = accessory_rows[0].expires_at
         fav_count = Favorite.query.filter_by(user_id=user_id).count()
         return render_template(
-            "dashboard.html", offers=offers, fav_count=fav_count, today=today
+            "dashboard.html",
+            offers=offers,
+            accessory_offers=accessory_offers,
+            accessory_expires_at=accessory_expires_at,
+            favorite_matches=favorite_matches,
+            fav_count=fav_count,
+            today=today,
         )
 
     @app.route("/bind", methods=["GET"])
@@ -321,9 +398,18 @@ def create_app() -> Flask:
                 detected_shard = detect_shard_by_token(access_token)
             except Exception as e:
                 logger.warning(f"URL 绑定时自动识别区服失败: {e}")
+            # Keep specific regional selections (KR, BR, TR, etc.) for the
+            # notification time-zone default; only refine broad shard choices.
             user.region = (
-                detected_shard if detected_shard in ("na", "eu", "ap") else region
+                detected_shard
+                if region in {"na", "eu", "ap"}
+                and detected_shard in {"na", "eu", "ap"}
+                else region
             )
+            if user.notification_timezone_auto:
+                user.notification_timezone = REGION_TIMEZONES.get(
+                    user.region, user.notification_timezone
+                )
             user.set_url_access_token(access_token)
             db.session.commit()
 
@@ -344,6 +430,9 @@ def create_app() -> Flask:
                     _("flash_bind_ok_store_fail", error=store_data["error"]), "warning"
                 )
             else:
+                from webhook import notify_daily_store
+
+                notify_daily_store(user, store_data)
                 flash(_("flash_bind_ok"), "success")
         except Exception as e:
             logger.warning(f"URL 绑定后首次商店刷新异常: {e}")
@@ -369,11 +458,33 @@ def create_app() -> Flask:
         if not user.riot_bound:
             flash(_("flash_not_bound"), "warning")
             return redirect(url_for("bind_riot"))
-        store_data = get_user_store(user)
+        from webhook import notify_daily_store, notify_store_error
+
+        try:
+            store_data = get_user_store(user)
+        except Exception as exc:
+            logger.exception("用户 %s 手动刷新商店发生异常", user.login_name)
+            store_data = {"error": f"商店刷新异常: {exc}"}
         if store_data.get("error"):
             flash(_("flash_store_error", error=store_data["error"]), "danger")
+            delivery = notify_store_error(user, str(store_data["error"]))
         else:
-            flash(_("flash_store_ok"), "success")
+            delivery = notify_daily_store(user, store_data)
+            match_count = len(store_data.get("favorites_matched") or [])
+            if match_count:
+                flash(_("flash_store_match", count=match_count), "success")
+            else:
+                flash(_("flash_store_ok"), "success")
+        if delivery["attempted"]:
+            category = "info" if delivery["failed"] == 0 else "warning"
+            flash(
+                _(
+                    "flash_webhook_delivery",
+                    success=delivery["success"],
+                    failed=delivery["failed"],
+                ),
+                category,
+            )
         return redirect(url_for("dashboard"))
 
     # --- 皮肤浏览 ---
@@ -400,8 +511,19 @@ def create_app() -> Flask:
     @app.route("/my/favorites")
     @login_required
     def my_favorites():
-        favs = Favorite.query.filter_by(user_id=_current_user_id()).all()
-        return render_template("favorites.html", favorites=favs)
+        user_id = _current_user_id()
+        favs = Favorite.query.filter_by(user_id=user_id).all()
+        current_offer_uuids = {
+            offer.skin_uuid
+            for offer in StoreOffer.query.filter_by(
+                user_id=user_id, offer_date=date.today()
+            ).all()
+        }
+        return render_template(
+            "favorites.html",
+            favorites=favs,
+            current_offer_uuids=current_offer_uuids,
+        )
 
     @app.route("/my/favorites/toggle", methods=["POST"])
     @login_required
@@ -430,7 +552,88 @@ def create_app() -> Flask:
             fav.skin_uuid = skin_uuid
             db.session.add(fav)
             db.session.commit()
-            return jsonify({"status": "added"})
+            matched_now = (
+                StoreOffer.query.filter_by(
+                    user_id=user_id, skin_uuid=skin_uuid, offer_date=date.today()
+                ).first()
+                is not None
+            )
+            return jsonify({"status": "added", "matched_now": matched_now})
+
+    @app.route("/my/webhook", methods=["POST"])
+    @login_required
+    def my_webhook_save():
+        user = _current_user()
+        webhook_url = request.form.get("webhook_url", "").strip()
+        if webhook_url:
+            try:
+                validate_webhook_url(webhook_url)
+            except ValueError as exc:
+                flash(_("flash_webhook_invalid", error=exc), "danger")
+                return redirect(url_for("my_favorites"))
+        user.webhook_url = webhook_url or None
+        db.session.commit()
+        flash(
+            _("flash_webhook_saved" if webhook_url else "flash_webhook_removed"),
+            "success",
+        )
+        return redirect(url_for("my_favorites"))
+
+    @app.route("/my/webhook/test", methods=["POST"])
+    @login_required
+    def my_webhook_test():
+        user = _current_user()
+        if not user.webhook_url:
+            flash(_("flash_webhook_missing"), "warning")
+            return redirect(url_for("my_favorites"))
+        from webhook import send_webhook
+
+        payload = {
+            "event": "test",
+            "user": user.display_name or user.login_name,
+            "timestamp": datetime.now().astimezone().isoformat(),
+        }
+        ok = send_webhook(user.webhook_url, payload)
+        flash(
+            _("flash_webhook_test_ok" if ok else "flash_webhook_test_fail"),
+            "success" if ok else "danger",
+        )
+        return redirect(url_for("my_favorites"))
+
+    @app.route("/settings", methods=["GET", "POST"])
+    @login_required
+    def user_settings():
+        user = _current_user()
+        if request.method == "POST":
+            language = request.form.get("notification_language", "")
+            timezone_name = request.form.get("notification_timezone", "")
+            reminder_time = request.form.get("notification_reminder_time", "")
+            timezone_auto = request.form.get("notification_timezone_auto") == "1"
+            if language not in SUPPORTED_LANGS:
+                flash(_("settings_language_invalid"), "danger")
+                return redirect(url_for("user_settings"))
+            if timezone_auto:
+                timezone_name = REGION_TIMEZONES.get(user.region, timezone_name)
+            try:
+                ZoneInfo(timezone_name)
+            except ZoneInfoNotFoundError:
+                flash(_("settings_timezone_invalid"), "danger")
+                return redirect(url_for("user_settings"))
+            try:
+                datetime.strptime(reminder_time, "%H:%M")
+            except ValueError:
+                flash(_("settings_reminder_time_invalid"), "danger")
+                return redirect(url_for("user_settings"))
+            user.notification_language = language
+            user.notification_timezone = timezone_name
+            user.notification_timezone_auto = timezone_auto
+            user.notification_reminder_time = reminder_time
+            db.session.commit()
+            flash(_("settings_saved"), "success")
+            return redirect(url_for("user_settings"))
+        return render_template(
+            "settings.html", user=user, notification_timezones=sorted(available_timezones())
+        )
 
     # ============ 管理员路由 ============
 
@@ -562,7 +765,6 @@ def create_app() -> Flask:
 
         payload = {
             "event": "test",
-            "message": "这是一条测试消息",
             "timestamp": datetime.now().isoformat(),
         }
         ok = send_webhook(wh.url, payload)
@@ -578,7 +780,14 @@ def create_app() -> Flask:
         from webhook import process_all_users
 
         result = process_all_users()
-        flash(f"手动检查完成: {result['success']} 成功, {result['error']} 失败", "info")
+        flash(
+            "手动检查完成: "
+            f"{result['success']} 成功, {result['error']} 失败, "
+            f"{result['favorite_matches']} 个收藏命中, "
+            f"{result['notifications_sent']} 条推送成功, "
+            f"{result['notification_errors']} 条推送失败",
+            "info",
+        )
         return redirect(url_for("admin_settings"))
 
     @app.route("/admin/refresh-skins", methods=["POST"])

@@ -2,7 +2,7 @@
 {% block title %}{{ _('dash_title') }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header dashboard-command">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2">
         <div>
             <h1>{{ _('dash_heading') }}</h1>
@@ -24,11 +24,11 @@
                 {% endif %}
             </p>
         </div>
-        <span class="text-muted small">{{ today.strftime('%Y-%m-%d') }}</span>
+        <span class="dashboard-date-chip"><i class="bi bi-calendar3"></i>{{ today.strftime('%Y-%m-%d') }}</span>
     </div>
 </div>
 
-<div class="dashboard-summary">
+<div class="dashboard-summary dashboard-metrics">
     <div class="summary-item">
         <div class="summary-label">{{ _('nav_bind_riot') }}</div>
         <div class="summary-value">{% if current_user.riot_bound %}{{ current_user.region | upper }}{% else %}-{% endif %}</div>
@@ -41,7 +41,27 @@
         <div class="summary-label">{{ _('dash_heading') }}</div>
         <div class="summary-value">{{ offers | length }}</div>
     </div>
+    <div class="summary-item">
+        <div class="summary-label">{{ _('dash_weekly_metric') }}</div>
+        <div class="summary-value">{{ accessory_offers | length }}</div>
+    </div>
 </div>
+
+{% if favorite_matches %}
+<section class="favorite-hit-alert" aria-live="polite">
+    <div class="favorite-hit-icon"><i class="bi bi-stars"></i></div>
+    <div class="favorite-hit-copy">
+        <span class="section-kicker">FAVORITE MATCH</span>
+        <h2>{{ _('dash_favorite_hit_title', count=favorite_matches | length) }}</h2>
+        <p>
+            {% for offer in favorite_matches %}
+            <span>{{ skin_name(offer.skin) if offer.skin else offer.name }}</span>{% if not loop.last %}<i>·</i>{% endif %}
+            {% endfor %}
+        </p>
+    </div>
+    <a href="{{ url_for('my_favorites') }}" class="btn btn-sm btn-primary">{{ _('dash_view_favorites') }}</a>
+</section>
+{% endif %}
 
 {% if not current_user.riot_bound %}
 <!-- Not bound empty state -->
@@ -56,21 +76,28 @@
 
 {% elif offers %}
 <!-- Daily offers grid -->
-<div class="section-toolbar">
-    <h2 class="section-kicker">{{ _('dash_heading') }}</h2>
-    <button class="btn btn-primary btn-sm" onclick="revealAll()">
-        <i class="bi bi-stars me-1"></i>{{ _('dash_reveal_all') }}
-    </button>
-</div>
+<section class="dashboard-offer-deck">
+    <div class="section-toolbar">
+        <div>
+            <p class="section-kicker">TODAY'S ROTATION</p>
+            <h2>{{ _('dash_heading') }}</h2>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="revealAll()">
+            <i class="bi bi-stars me-1"></i>{{ _('dash_reveal_all') }}
+        </button>
+    </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3">
     {% for offer in offers %}
     <div class="col-6 col-md-3">
-        <div class="store-item-container store-card-frame tier-card-{{ offer.tier_name.replace(' ', '-').lower() if offer.tier_name else 'none' }}">
+        <div class="store-item-container store-card-frame {% if offer.is_favorite %}is-favorite-match{% endif %} tier-card-{{ offer.tier_name.replace(' ', '-').lower() if offer.tier_name else 'none' }}">
             <div class="skin-flip-card" onclick="this.classList.toggle('is-revealed')">
                 <!-- Front: Mystery Card -->
                 <div class="card-front">
                     <i class="bi bi-fire"></i>
+                    {% if offer.is_favorite %}
+                    <span class="favorite-front-badge"><i class="bi bi-star-fill"></i>{{ _('dash_favorite_badge') }}</span>
+                    {% endif %}
                 </div>
                 <!-- Back: Skin Info -->
                 <div class="card-back skin-card">
@@ -110,12 +137,13 @@
     {% endfor %}
 </div>
 
-<form action="{{ url_for('my_store_refresh') }}" method="POST">
+<form action="{{ url_for('my_store_refresh') }}" method="POST" class="dashboard-refresh">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn btn-outline-primary btn-sm">
         <i class="bi bi-arrow-clockwise me-1"></i>{{ _('dash_refresh') }}
     </button>
 </form>
+</section>
 
 {% else %}
 <!-- No data yet -->
@@ -131,9 +159,70 @@
 </div>
 {% endif %}
 
-<div class="separator" style="margin: 2rem 0;"></div>
+{% if current_user.riot_bound %}
+<section class="dashboard-weekly-store">
+    <div class="section-toolbar weekly-store-toolbar">
+        <div>
+            <p class="section-kicker">WEEKLY ACCESSORIES</p>
+            <h2>{{ _('dash_weekly_store') }}</h2>
+            <p class="weekly-store-description">{{ _('dash_weekly_desc') }}</p>
+        </div>
+        {% if accessory_expires_at %}
+        <span class="weekly-countdown" id="weekly-countdown"
+            data-expires-at="{{ accessory_expires_at.isoformat() }}Z">
+            <i class="bi bi-clock-history"></i>
+            <span>{{ _('dash_refresh_countdown') }}</span>
+        </span>
+        {% endif %}
+    </div>
+
+    {% if accessory_offers %}
+    <div class="weekly-accessory-grid">
+        {% for offer in accessory_offers %}
+        <article class="accessory-card accessory-{{ offer.item_type }}">
+            <div class="accessory-card-visual">
+                <span class="accessory-type-badge">
+                    {% if offer.item_type == 'buddy' %}<i class="bi bi-key"></i>
+                    {% elif offer.item_type == 'card' %}<i class="bi bi-person-vcard"></i>
+                    {% elif offer.item_type == 'spray' %}<i class="bi bi-palette"></i>
+                    {% elif offer.item_type == 'title' %}<i class="bi bi-type"></i>
+                    {% else %}<i class="bi bi-box"></i>{% endif %}
+                    {{ _('accessory_' ~ offer.item_type) }}
+                </span>
+                {% if offer.icon_url %}
+                <img src="{{ offer.icon_url }}" alt="{{ offer.name }}" loading="lazy">
+                {% else %}
+                <i class="bi bi-stars accessory-placeholder"></i>
+                {% endif %}
+            </div>
+            <div class="accessory-card-info">
+                <strong title="{{ offer.name }}">{{ offer.name }}</strong>
+                <span class="accessory-price">
+                    <i class="bi bi-hexagon-fill"></i>
+                    {{ offer.cost if offer.cost is not none else '-' }} {{ _('dash_kingdom_credits') }}
+                </span>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="weekly-store-empty">
+        <div><i class="bi bi-calendar2-week"></i></div>
+        <p>{{ _('dash_weekly_empty') }}</p>
+        <form action="{{ url_for('my_store_refresh') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-clockwise me-1"></i>{{ _('dash_refresh') }}
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</section>
+{% endif %}
 
 <!-- Quick links -->
+<section class="dashboard-utilities">
+    <div class="section-toolbar"><div><p class="section-kicker">QUICK ACCESS</p><h2>Workspace</h2></div></div>
 <div class="row g-3">
     <div class="col-md-4">
         <a href="{{ url_for('skins_list') }}" class="quick-action">
@@ -169,6 +258,7 @@
         </a>
     </div>
 </div>
+</section>
 {% endblock %}
 
 {% block scripts %}
@@ -181,5 +271,18 @@
             }, index * 150);
         });
     }
+
+    function updateWeeklyCountdown() {
+        const element = document.getElementById('weekly-countdown');
+        if (!element) return;
+        const target = new Date(element.dataset.expiresAt).getTime();
+        const remaining = Math.max(0, Math.floor((target - Date.now()) / 1000));
+        const days = Math.floor(remaining / 86400);
+        const hours = Math.floor((remaining % 86400) / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        element.querySelector('span').textContent = `${days}d ${hours}h ${minutes}m`;
+    }
+    updateWeeklyCountdown();
+    setInterval(updateWeeklyCountdown, 60000);
 </script>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% block title %}系统设置 - Valorant 每日商店{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header admin-page-header">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2">
         <div>
             <h1>系统设置</h1>
@@ -61,18 +61,18 @@
         <div class="admin-panel">
             <div class="admin-panel-header">
                 <div>
-                    <h2><i class="bi bi-bell"></i> 添加 Webhook</h2>
-                    <p>用于推送每日商店检查结果。</p>
+                    <h2><i class="bi bi-discord"></i> 添加 Discord 通知频道</h2>
+                    <p>可选的全局频道：会接收所有用户的每日商店推送。</p>
                 </div>
             </div>
             <div class="admin-panel-body">
                 <form method="POST" action="{{ url_for('admin_webhook_add') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-2">
-                        <input type="text" class="form-control" name="name" placeholder="名称（如：微信通知）" required>
+                        <input type="text" class="form-control" name="name" placeholder="频道名称（如：运营通知）" required>
                     </div>
                     <div class="mb-2">
-                        <input type="url" class="form-control" name="url" placeholder="Webhook URL" required>
+                        <input type="url" class="form-control" name="url" placeholder="https://discord.com/api/webhooks/..." required>
                     </div>
                     <button type="submit" class="btn btn-success w-100">
                         <i class="bi bi-plus-lg"></i> 添加
@@ -86,8 +86,8 @@
 <div class="admin-panel mt-4">
     <div class="admin-panel-header">
         <div>
-            <h2><i class="bi bi-list-ul"></i> Webhook 列表</h2>
-            <p>启用、测试或删除已配置的通知端点。</p>
+            <h2><i class="bi bi-list-ul"></i> Discord 全局频道</h2>
+            <p>启用、测试或删除全局通知频道。</p>
         </div>
     </div>
     <div class="admin-panel-body">
@@ -146,7 +146,7 @@
             </table>
         </div>
         {% else %}
-        <p class="text-muted text-center mb-0">还没有配置 Webhook</p>
+        <p class="text-muted text-center mb-0">还没有配置 Discord 全局频道</p>
         {% endif %}
     </div>
 </div>

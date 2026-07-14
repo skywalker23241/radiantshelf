@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 
 import requests
+from sqlalchemy import or_
 
 from models import Skin, db
 
@@ -262,7 +263,17 @@ def is_cache_stale() -> bool:
 
 def search_skins(query: str, page: int = 1, per_page: int = 24):
     q = Skin.query
+    query = query.strip()
     if query:
-        q = q.filter(Skin.name.ilike(f"%{query}%"))
+        pattern = f"%{query}%"
+        # `name` stores the Chinese source name and `name_i18n` stores every
+        # localized display name as JSON. Search both so users can keep using
+        # the same search field after switching the interface language.
+        q = q.filter(
+            or_(
+                Skin.name.ilike(pattern),
+                Skin.name_i18n.ilike(pattern),
+            )
+        )
     q = q.filter(Skin.tier_name.isnot(None))
     return q.order_by(Skin.name).paginate(page=page, per_page=per_page, error_out=False)
